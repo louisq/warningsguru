@@ -1,0 +1,36 @@
+###########################
+#		  Facts
+###########################
+
+TOIFSegmentIsRelatedToProject=project1
+TOIFSegmentIsProducedByOrganization=org1
+TOIFSegmentIsOwnedByOrganization=org1
+TOIFSegmentIsGeneratedByPerson=person1
+TOIFSegmentIsSupervisedByPerson=person1
+
+PersonIsInvolvedInProjectAsRole=person1;project1;role1
+OrganizationIsInvolvedInProjectAsRole=org1;project1;role2
+OrganizationIsPartOfOrganizationAsRole=org1;org2;role2
+PersonIsEmployedByOrganizationAsRole=person1;org1;role1
+
+###########################
+#		Entities
+###########################
+
+SegmentDescription=Segment.
+
+#projectId=name;description
+project1=project1Name;project description.
+
+#personId=name;email;phone
+person1=Joe Bloggs;blogs@kdmanalytics.com;555-1234
+
+#organizationId=name;description;address;phone;email
+org1=KDM;Kdm Analytics;Richmond Road;555-5555;kdm@kdmanalytics.com
+
+#organizationId=name;description;address;phone;email
+org2=Acme Corporation;Acme Corporation;blah;555-5555;thingamy@thingamy.com
+
+#roleId=name;description
+role1=Software Developer;Developer on the TOIF Adaptors project
+role2=company;employer
