@@ -2,7 +2,7 @@ import os
 from shutil import copytree, rmtree
 
 # The purpose of this utility is to prevent conflicts between commitguru and staticguru
-from toif.commitguru import config
+import config
 
 
 def load_repository(repository):

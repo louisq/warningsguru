@@ -9,6 +9,7 @@ import os
 from db_versioning import flyway_runner
 from pom_injector.update_pom import update_pom
 from kdm_extractor import extract
+from repos.repo_manager import load_repository
 from utility.Logging import logger
 from utility.service_sql import *
 
@@ -54,8 +55,12 @@ class AdaptorRunner:
 
                 # Checkout repo to commit
                 for commit in commits:
-                    service_db.processing_commit(commit['repo'], commit['commit'])
-                    repo_dir = os.path.join(config.REPOSITORY_PATH, commit['repo'])
+                    repo_id = commit['repo']
+                    commit_hash = commit['commit']
+
+                    service_db.processing_commit(repo_id, commit_hash)
+                    load_repository(repo_id)
+                    repo_dir = os.path.join(config.REPOSITORY_CACHE_PATH, repo_id)
 
                     mvn_result, log = process_inject_run_commit(commit, repo_dir)
 
