@@ -42,8 +42,6 @@ class AdaptorRunner:
 
         service_db = Service_DB(REPROCESS_FAILURES_HOURS)
 
-        service_db.setup_tables_in_commit_guru()
-
         while True:
             print "test"
             commits = service_db.get_unprocessed_commits()

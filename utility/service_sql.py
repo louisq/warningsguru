@@ -9,37 +9,6 @@ class Service_DB:
         self.db = Postgres(config.get_local_settings())
         self.REPROCESS_FAILURES_HOURS = reprocess_failures_hours
 
-    def setup_tables_in_commit_guru(self):
-        cursor = self.db.get_cursor()
-
-        query = """
-                  CREATE TABLE IF NOT EXISTS STATIC_COMMIT_PROCESSED (
-                    REPO TEXT,
-                    COMMIT TEXT,
-                    STATUS TEXT,
-                    BUILD TEXT,
-                    BUILD_LOG TEXT,
-                    CREATED timestamp DEFAULT NOW(),
-                    MODIFIED timestamp DEFAULT NOW(),
-                    PRIMARY KEY (REPO, COMMIT));
-
-                  CREATE TABLE IF NOT EXISTS STATIC_COMMIT_LINE_WARNING (
-                    REPO TEXT,
-                    COMMIT TEXT,
-                    RESOURCE TEXT, -- resource
-                    LINE TEXT,
-                    SFP TEXT,
-                    CWE TEXT,
-                    VALID TEXT DEFAULT NULL,
-                    TRUST TEXT DEFAULT NULL,
-                    GENERATOR_TOOL TEXT,
-                    WEAKNESS TEXT,
-                    CREATED timestamp DEFAULT NOW());
-                """
-
-        cursor.execute(query)
-        self.db.db.commit()
-
     def get_unprocessed_commits(self):
         cursor = self.db.get_cursor()
 
