@@ -9,7 +9,8 @@ import pwd
 BACKGROUND_SLEEP_MINUTES = 10
 
 # Set the path
-REPOSITORY_PATH = "/{path_to_commitguru_code_analyser}/ingester/CASRepos/git"
+COMMITGURU_REPOSITORY_PATH = "/{path_to_commitguru_code_analyser}/ingester/CASRepos/git"
+REPOSITORY_CACHE_PATH = "/{full_path_to_static_guru_installation}/staticguru/repos/git"
 
 DATABASE_HOST = "DATABASE_HOST"
 DATABASE_PORT = "DATABASE_PORT"
