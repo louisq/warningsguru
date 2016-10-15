@@ -6,25 +6,44 @@ import time
 from time import sleep
 import os
 
+from db_versioning import flyway_runner
 from pom_injector.update_pom import update_pom
 from kdm_extractor import extract
+from utility.Logging import logger
 from utility.service_sql import *
 
 import config
 from config import *
 
 BUILD = "BUILD"
+PROJECT_NAME = "StaticGuru"
+VERSION = "0.0.1"
 
 
 class AdaptorRunner:
 
     def __init__(self):
+        logger.info("Starting %s - version %s" % (PROJECT_NAME, VERSION))
+
+        # TODO check dependencies for all modules (toif, git, commitguru, maven, etc.)
+
+        db = config.get_local_settings()
+
+        # Checking the state of database and attempting to migrate if necessary
+        flyway_runner.migrate_db(db[DATABASE_HOST], db[DATABASE_PORT], db[DATABASE_NAME], db[DATABASE_USERNAME], db[DATABASE_PASSWORD])
+
+        # Once everything as been validated we can start the service
+        logger.info("Service prerequisites check complete. Starting %s" % PROJECT_NAME)
+        self._start_service()
+
+
+    def _start_service(self):
 
         service_db = Service_DB(REPROCESS_FAILURES_HOURS)
 
         service_db.setup_tables_in_commit_guru()
 
-        while(True):
+        while True:
             print "test"
             commits = service_db.get_unprocessed_commits()
 

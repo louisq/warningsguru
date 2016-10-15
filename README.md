@@ -6,6 +6,7 @@ analysed.
 
 *Note: This is experimental tool which is still under development*
 
+
 # Prerequisites
 
 This project makes use of data and calls on other tools to be able to 
@@ -37,6 +38,14 @@ The following fields need to be updated
  configuration. The name of the directory shall be your local username
  where the script is being executed from
  - [ ] TOIF_EXECUTABLE : Full path to the TOIF instance
+
+# Explanation of run
+
+When static guru will start up it will validate the version of the 
+database. If it is determined that staticguru is not currently running
+on the latest version it will be updated
+
+TODO need to write the remainder of the explanation
 
 # Run
 

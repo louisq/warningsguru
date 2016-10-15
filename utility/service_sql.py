@@ -1,5 +1,6 @@
+import config
 from postgres import Postgres
-from toif.commitguru import config
+
 
 
 class Service_DB:
