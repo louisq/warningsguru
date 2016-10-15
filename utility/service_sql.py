@@ -1,8 +1,6 @@
 import config
 from postgres import Postgres
 
-
-
 class Service_DB:
 
     def __init__(self, reprocess_failures_hours):
@@ -28,7 +26,7 @@ class Service_DB:
                     WHERE COMMITS.COMMIT_HASH NOT IN (SELECT COMMIT FROM STATIC_COMMIT_PROCESSED AS PROCESSED)
                     ORDER BY author_date_unix_timestamp
                     LIMIT 10;
-                    """ % config.REPO_TO_ANALYSE
+                    """
 
         cursor.execute(query)
         rows = cursor.fetchall()
