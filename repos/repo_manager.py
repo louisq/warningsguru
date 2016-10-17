@@ -19,7 +19,8 @@ def load_repository(repository):
     manager_repo_path = _get_manager_repository_path(repository)
 
     # TODO don't run the delete function every single time
-    rmtree(manager_repo_path)
+    if os.path.exists(manager_repo_path):
+        rmtree(manager_repo_path)
 
     # TODO We might not need to copy everything each time
     copytree(commitguru_repo_path, manager_repo_path)

@@ -6,7 +6,7 @@ import sys
 from git import Repo
 import re
 
-from toif.commitguru.config import TOIF_EXECUTABLE
+from config import TOIF_EXECUTABLE
 
 __author__ = 'louisq'
 
