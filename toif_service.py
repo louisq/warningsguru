@@ -10,6 +10,7 @@ from db_versioning import flyway_runner
 from pom_injector.update_pom import update_pom
 from kdm_extractor import extract
 from repos.repo_manager import load_repository
+from repos.git import GIT
 from utility.Logging import logger
 from utility.service_sql import *
 
@@ -36,7 +37,6 @@ class AdaptorRunner:
         # Once everything as been validated we can start the service
         logger.info("Service prerequisites check complete. Starting %s" % PROJECT_NAME)
         self._start_service()
-
 
     def _start_service(self):
 
@@ -80,6 +80,16 @@ class AdaptorRunner:
 
                                 # Save warnings to db
                                 service_db.add_commit_warning_lines(warnings)
+
+                                # Get the line blames
+                                line_blames = _get_line_blames(repo_dir, warnings)
+
+                                for blame in line_blames:
+                                    blame['repo_id'] = repo_id
+                                    blame['commit_id'] = commit_hash
+
+                                service_db.add_commit_warning_blames(line_blames)
+
 
                             else:
                                 log = "\n".join((log, "file %s does not exist. this is not normal as zip file existed"
@@ -185,5 +195,30 @@ def _extract_kdm_file(repo_dir):
                      stderr=subprocess.STDOUT)
     process.communicate()[0]
     sleep(5)
+
+
+def _get_line_blames(repo_dir, warnings):
+
+    files_with_warnings = {}
+
+    for warning in warnings:
+
+        file_path = warning['resource']
+        line_number = warning['line_number']
+
+        if file_path not in files_with_warnings:
+            files_with_warnings[file_path] = []
+
+        if line_number not in files_with_warnings[file_path]:
+            files_with_warnings[file_path].push(line_number)
+
+    warning_lines_blames = []
+
+    for file_path in files_with_warnings.keys():
+
+        blames = GIT().get_warning_blames(repo_dir, file_path, files_with_warnings[file_path])
+        warning_lines_blames.extend(blames)
+
+    return warning_lines_blames
 
 AdaptorRunner()

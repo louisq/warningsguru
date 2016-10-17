@@ -96,3 +96,14 @@ class Service_DB:
         (%(repo_id)s, %(commit_id)s, %(resource)s, %(line_number)s, %(SFP)s, %(CWE)s, %(generator_tool)s, %(description)s)
         """, warnings)
         self.db.db.commit()
+
+    def add_commit_warning_blames(self, blames):
+
+        cursor = self.db.get_cursor()
+        cursor.executemany("""
+        INSERT INTO static_commit_line_blame
+        (REPO, COMMIT, RESOURCE, LINE, ORIGIN_COMMIT, ORIGIN_RESOURCE, ORIGIN_LINE, IS_NEW_LINE)
+        VALUES
+        (%(repo_id)s, %(commit_id)s, %(resource)s, %(line)s, %(origin_commit)s, %(origin_resource)s, %(origin_line)s, %(is_new_line)s,)
+        """, blames)
+        self.db.db.commit()

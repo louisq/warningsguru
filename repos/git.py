@@ -27,24 +27,23 @@ git blame -lnswfMMMCCC toggles_integrated.tex
 
 class GIT (VCS):
 
-    def get_warning_blames(self, repo, file_path, warnings):
-        self.repo = repo
+    def get_warning_blames(self, repo_full_path, file_path, warnings):
+        self.repo = repo_full_path
 
-        lines_with_blame = _get_file_blames(repo, file_path)
+        lines_with_blame = _get_file_blames(repo_full_path, file_path)
 
-        # todo access how we would validate for moves
+        # todo determine how we would handle the move or copies of lines from one file to another
 
         filtered_lines = _filter_lines(lines_with_blame, warnings)
 
-        # todo determine which lines are new
-
-        current_repo = _get_current_commit_hash(repo)
+        current_repo = _get_current_commit_hash(repo_full_path)
 
         for line in filtered_lines:
-            if line['commit_hash'] == current_repo:
-                line["is_line_new"] = True
+            line['resource'] = file_path
+            if line['origin_commit'] == current_repo:
+                line["is_new_line"] = True
             else:
-                line["is_line_new"] = False
+                line["is_new_line"] = False
 
         return filtered_lines
 
@@ -79,7 +78,7 @@ def _get_file_blames(git_root, file_path):
 
     lines = commit_matching_pattern.findall(result)
 
-    commit_keys = ['commit_hash', 'original_file_path', 'line_origin', 'line_new']
+    commit_keys = ['origin_commit', 'origin_resource', 'origin_line', 'line']
 
     return [dict(zip(commit_keys, line))for line in lines]
 
@@ -89,7 +88,7 @@ def _filter_lines(lines, include):
     filtered_lines = []
 
     for line in lines:
-        if int(line['line_new']) in include:
+        if int(line['line']) in include:
             filtered_lines.append(line)
 
     return filtered_lines
