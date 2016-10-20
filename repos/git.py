@@ -1,34 +1,23 @@
 # The purpose of this utility is to obtain the blames
 
-# git blame -p {path_to_file}
 import os
 import re
 import subprocess
 
-
-
 #todo List of things that would have to be completed
-# Get the blame
 # Take into account the dag
 #
 from repos.vcs_generic import VCS
 
-"""
-This specific method will be returning the information regarding the warnings that we in
-
-git blame -lnswfMMMCCC toggles_integrated.tex
-
-
-{line:#, commit_hash:""}
-
-"""
-# todo make the repo very generic so that it could eventually be extended to other VCS
-
 
 class GIT (VCS):
 
+    """
+    This specific method will be returning the information regarding the line blame for the lines that have been provided as
+    having a warning
+    returns [{"origin_commit": "", 'origin_resource': "", 'origin_line': "", 'line': "", 'is_new_line': boolean}]
+    """
     def get_warning_blames(self, repo_full_path, file_path, warnings):
-        self.repo = repo_full_path
 
         lines_with_blame = _get_file_blames(repo_full_path, file_path)
 
@@ -59,6 +48,11 @@ def _get_current_commit_hash(git_root):
 
 
 def _get_file_blames(git_root, file_path):
+
+    # Sanitize the file path to remove leading slash
+    if len(file_path) > 0 and file_path[0] == '/':
+        file_path = file_path.lstrip('/')
+
     process = subprocess.Popen("git blame -lnswfMMMCCC %s" % file_path,
                                shell=True,
                                cwd=os.path.abspath(git_root),
@@ -68,10 +62,10 @@ def _get_file_blames(git_root, file_path):
 
     commit_matching_pattern = re.compile(
         """
-        ([0-9a-f]{40})\s # commit hash
+        ([\^0-9a-f]{40})\s+ # commit hash # commits with ^ appended to them are the initial commit. We would have to find out how to disable this feature
         (.+)\s+  # original file path and file name
         (\d+)\s+ # original line number
-        (\d+)\)\s # updated line number
+        (\d+)\)  # updated line number
         """
         , re.VERBOSE + re.IGNORECASE
     )
@@ -88,7 +82,7 @@ def _filter_lines(lines, include):
     filtered_lines = []
 
     for line in lines:
-        if int(line['line']) in include:
+        if line['line'] in include:
             filtered_lines.append(line)
 
     return filtered_lines

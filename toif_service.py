@@ -210,7 +210,7 @@ def _get_line_blames(repo_dir, warnings):
             files_with_warnings[file_path] = []
 
         if line_number not in files_with_warnings[file_path]:
-            files_with_warnings[file_path].push(line_number)
+            files_with_warnings[file_path].append(line_number)
 
     warning_lines_blames = []
 
