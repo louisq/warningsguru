@@ -19,22 +19,20 @@ class GIT (VCS):
     """
     def get_warning_blames(self, repo_full_path, file_path, warnings):
 
-        lines_with_blame = _get_file_blames(repo_full_path, file_path)
+        lines_with_blame = _get_file_blames(repo_full_path, file_path, warnings)
 
         # todo determine how we would handle the move or copies of lines from one file to another
 
-        filtered_lines = _filter_lines(lines_with_blame, warnings)
+        current_repo = _get_current_commit_hash(repo_full_path)[:40]
 
-        current_repo = _get_current_commit_hash(repo_full_path)
-
-        for line in filtered_lines:
+        for line in lines_with_blame:
             line['resource'] = file_path
             if line['origin_commit'] == current_repo:
                 line["is_new_line"] = True
             else:
                 line["is_new_line"] = False
 
-        return filtered_lines
+        return lines_with_blame
 
 
 # TODO remove once git functionalities are all included in this class
@@ -47,13 +45,24 @@ def _get_current_commit_hash(git_root):
     return process.communicate()[0]
 
 
-def _get_file_blames(git_root, file_path):
+def _generate_git_line_limit(lines):
+    line_limiter = ""
+
+    for line_number in lines:
+        line_limiter += " -L %s,%s" % (line_number, line_number)
+
+    return line_limiter
+
+
+def _get_file_blames(git_root, file_path, warnings):
 
     # Sanitize the file path to remove leading slash
     if len(file_path) > 0 and file_path[0] == '/':
         file_path = file_path.lstrip('/')
 
-    process = subprocess.Popen("git blame -lnswfMMMCCC %s" % file_path,
+    git_command = "git blame -lnswfMMMCCC %s %s" % (_generate_git_line_limit(warnings), file_path)
+
+    process = subprocess.Popen(git_command,
                                shell=True,
                                cwd=os.path.abspath(git_root),
                                stdout=subprocess.PIPE,
@@ -75,15 +84,3 @@ def _get_file_blames(git_root, file_path):
     commit_keys = ['origin_commit', 'origin_resource', 'origin_line', 'line']
 
     return [dict(zip(commit_keys, line))for line in lines]
-
-
-def _filter_lines(lines, include):
-
-    filtered_lines = []
-
-    for line in lines:
-        if line['line'] in include:
-            filtered_lines.append(line)
-
-    return filtered_lines
-
