@@ -18,12 +18,13 @@ def load_repository(repository):
     commitguru_repo_path = os.path.join(config.COMMITGURU_REPOSITORY_PATH, repository)
     manager_repo_path = _get_manager_repository_path(repository)
 
-    # TODO don't run the delete function every single time
-    if os.path.exists(manager_repo_path):
-        rmtree(manager_repo_path)
+    if not config.DISABLE_REPO_RESET:
+        # TODO don't run the delete function every single time
+        if os.path.exists(manager_repo_path):
+            rmtree(manager_repo_path)
 
-    # TODO We might not need to copy everything each time
-    copytree(commitguru_repo_path, manager_repo_path)
+        # TODO We might not need to copy everything each time, we could just download the git repo folder
+        copytree(commitguru_repo_path, manager_repo_path)
 
 
 def _get_manager_repository_path(repository):

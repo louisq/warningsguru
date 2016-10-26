@@ -38,6 +38,8 @@ KDM_FILE = "assimilated.kdm"
 
 REPROCESS_FAILURES_HOURS = 1
 
+# If commit guru is disabled then we don't need to revalidate the repo to confirm that there as been changes to the repo
+DISABLE_REPO_RESET = False
 
 def get_local_settings():
 
