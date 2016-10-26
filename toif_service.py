@@ -90,6 +90,10 @@ class AdaptorRunner:
 
                                 service_db.add_commit_warning_blames(line_blames)
 
+                                # Get the commit parent history
+                                parent_commit_history = _get_commit_parents(repo_dir, repo_id)
+                                service_db.add_commit_history_graph(parent_commit_history)
+
 
                             else:
                                 log = "\n".join((log, "file %s does not exist. this is not normal as zip file existed"
@@ -195,6 +199,19 @@ def _extract_kdm_file(repo_dir):
                      stderr=subprocess.STDOUT)
     process.communicate()[0]
     sleep(5)
+
+
+def _get_commit_parents(repo_dir, repo_id, all_commits=False):
+
+    history = GIT().get_commit_parents(repo_dir, all_commits=all_commits)
+
+    commit_parents = []
+
+    for commit in history:
+        for parent in commit['parents']:
+            commit_parents.append({"repo_id": repo_id, "commit_id": commit["commit"], "parent_commit": parent})
+
+    return commit_parents
 
 
 def _get_line_blames(repo_dir, warnings):

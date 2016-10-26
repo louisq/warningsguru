@@ -12,7 +12,32 @@ from repos.vcs_generic import VCS
 
 class GIT (VCS):
 
-    """
+    def checkout(self, repo_path, commit):
+        print("Checking out %s from %s" % (commit['commit'], os.getcwd()))
+        subprocess.call("git reset --hard; git clean -df; git checkout %s" % commit['commit'], shell=True, cwd=repo_path)
+
+    def get_current_commit_graph(self, repo_path):
+        return _get_repo_dag(repo_path, only_current_commit=True)
+
+    def get_commit_graph(self, repo_path):
+        return _get_repo_dag(repo_path, only_current_commit=False)
+
+    def get_commit_parents(self, repo_path, all_commits=False):
+        git_command = "git log --pretty=format:\"%H %P\" %s" % ("" if all_commits else "-1")
+
+        process = subprocess.Popen(git_command,
+                                   shell=True,
+                                   cwd=os.path.abspath(repo_path),
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.STDOUT)
+        result = process.communicate()[0]
+
+        result = map(lambda line: _get_graph(line), result.splitlines())
+
+        return result
+
+
+        """
     This specific method will be returning the information regarding the line blame for the lines that have been provided as
     having a warning
     returns [{"origin_commit": "", 'origin_resource': "", 'origin_line': "", 'line': "", 'is_new_line': boolean}]
@@ -52,6 +77,27 @@ def _generate_git_line_limit(lines):
         line_limiter += " -L %s,%s" % (line_number, line_number)
 
     return line_limiter
+
+
+def _get_repo_dag(git_root, only_current_commit=True):
+    git_command = "git log --pretty=format:\"%H %P\" %s" % ("-1" if only_current_commit else "")
+
+    process = subprocess.Popen(git_command,
+                               shell=True,
+                               cwd=os.path.abspath(git_root),
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.STDOUT)
+    result = process.communicate()[0]
+
+    result = map(lambda line: _get_graph(line), result.splitlines())
+
+    return result
+
+
+def _get_graph(hashes):
+
+    hashes_list = hashes.split()
+    return {"commit": hashes_list[0], "parents": None if len(hashes_list) == 0 else hashes_list[1:]}
 
 
 def _get_file_blames(git_root, file_path, warnings):

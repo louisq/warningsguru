@@ -107,3 +107,14 @@ class Service_DB:
         (%(repo_id)s, %(commit_id)s, %(resource)s, %(line)s, %(origin_commit)s, %(origin_resource)s, %(origin_line)s, %(is_new_line)s)
         """, blames)
         self.db.db.commit()
+
+    def add_commit_history_graph(self, relations):
+        cursor = self.db.get_cursor()
+        cursor.executemany("""
+        INSERT INTO commit_history_graph
+        (REPO, COMMIT, PARENT_COMMIT)
+        VALUES
+        (%(repo_id)s, %(commit_id)s, %(parent_commit)s)
+        """, blames)
+        self.db.db.commit()
+
