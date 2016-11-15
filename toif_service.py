@@ -151,7 +151,7 @@ def process_inject_run_commit(commit, repo_dir):
             os.makedirs(adaptor_dir_path)
 
         print("Building %s and running TOIF adaptors" % commit['commit'])
-        process = subprocess.Popen("mvn package -DskipTests", shell=True, cwd=repo_dir, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        process = subprocess.Popen("mvn -T 1C package -DskipTests exec:exec", shell=True, cwd=repo_dir, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         maven_logs = process.communicate()[0]
         # todo log the results
         if process.returncode == 0:
