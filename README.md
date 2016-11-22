@@ -23,7 +23,7 @@ The following snapshots should be used with staticguru to ensure the
 proper functioning of the components
 
 
-https://github.com/louisq/CAS_Web/releases/tag/sg_web161003
+https://github.com/louisq/CAS_Web/tree/dev
 
 https://github.com/louisq/CAS_CodeRepoAnalyzer/releases/tag/sg_cra161003
 
