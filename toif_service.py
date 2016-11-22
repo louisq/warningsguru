@@ -131,7 +131,7 @@ runner_base_dir_path = os.path.abspath(os.path.join(os.path.curdir, 'maven_toif_
 
 def process_inject_run_commit(commit, repo_dir):
 
-    print("Checking out %s from %s" % (commit['commit'], os.getcwd()))
+    print("Checking out %s from %s" % (commit['commit'], repo_dir))
     subprocess.call("git reset --hard; git clean -df; git checkout %s" % commit['commit'], shell=True, cwd=repo_dir)
 
     # Check if it's a maven project
