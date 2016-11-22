@@ -47,11 +47,11 @@ class Service_DB:
     def truncate_commit_processing(self):
         cursor = self.db.get_cursor()
         cursor.execute(
-                """
-                DELETE FROM STATIC_COMMIT_PROCESSED
-                WHERE STATUS <> 'PROCESSED' AND modified < NOW() - INTERVAL '15 minute';
-                --WHERE modified < NOW() - INTERVAL '%s HOUR';
-                """ % self.REPROCESS_FAILURES_HOURS
+            """
+            DELETE FROM STATIC_COMMIT_PROCESSED
+            WHERE STATUS <> 'PROCESSED' AND modified < NOW() - INTERVAL '360 minute';
+            --WHERE modified < NOW() - INTERVAL '%s HOUR';
+            """ % self.REPROCESS_FAILURES_HOURS
         )
         self.db.db.commit()
 
@@ -95,7 +95,6 @@ class Service_DB:
         VALUES
         (%(repo_id)s, %(commit_id)s, %(resource)s, %(line_number)s, %(SFP)s, %(CWE)s, %(generator_tool)s, %(description)s)
         """, warnings)
-        self.db.db.commit()
 
     def add_commit_warning_blames(self, blames):
 
@@ -106,7 +105,6 @@ class Service_DB:
         VALUES
         (%(repo_id)s, %(commit_id)s, %(resource)s, %(line)s, %(origin_commit)s, %(origin_resource)s, %(origin_line)s, %(is_new_line)s)
         """, blames)
-        self.db.db.commit()
 
     def add_commit_history_graph(self, relations):
         cursor = self.db.get_cursor()
@@ -115,6 +113,4 @@ class Service_DB:
         (REPO, COMMIT, PARENT_COMMIT)
         VALUES
         (%(repo_id)s, %(commit_id)s, %(parent_commit)s)
-        """, blames)
-        self.db.db.commit()
-
+        """, relations)

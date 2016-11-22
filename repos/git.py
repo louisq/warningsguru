@@ -23,7 +23,11 @@ class GIT (VCS):
         return _get_repo_dag(repo_path, only_current_commit=False)
 
     def get_commit_parents(self, repo_path, all_commits=False):
-        git_command = "git log --pretty=format:\"%H %P\" %s" % ("" if all_commits else "-1")
+
+        if all_commits:
+            git_command = "git log --pretty=format:\"%H %P\""
+        else:
+            git_command = "git log --pretty=format:\"%H %P\" -1"
 
         process = subprocess.Popen(git_command,
                                    shell=True,
