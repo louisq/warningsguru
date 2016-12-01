@@ -78,55 +78,60 @@ class AdaptorRunner:
                     commit_hash = commit['commit']
 
                     service_db.processing_commit(repo_id, commit_hash)
-                    load_repository(repo_id)
                     repo_dir = os.path.join(config.REPOSITORY_CACHE_PATH, repo_id)
 
-                    mvn_result, log = process_inject_run_commit(commit, repo_dir)
+                    if not load_repository(repo_id, repo_dir, commit_hash):
+                        # Failed to load the repo or the commit
+                        commit_result = "COMMIT_MISSING"
+                        log = "repo or commit not loaded"
+                    else:
 
-                    if mvn_result == BUILD:
-                        # Build was successful so we can continue
-                        log = "\n".join((log, run_assimilator(repo_dir)))
+                        commit_result, log = process_inject_run_commit(commit, repo_dir)
 
-                        kdm_file = _get_kdm_file_output_path(repo_dir)
-                        zip_kdm_file = kdm_file + ".zip"
+                        if commit_result == BUILD:
+                            # Build was successful so we can continue
+                            log = "\n".join((log, run_assimilator(repo_dir)))
 
-                        if os.path.isfile(zip_kdm_file):
+                            kdm_file = _get_kdm_file_output_path(repo_dir)
+                            zip_kdm_file = kdm_file + ".zip"
 
-                            _extract_kdm_file(repo_dir)
+                            if os.path.isfile(zip_kdm_file):
 
-                            if os.path.isfile(kdm_file):
+                                _extract_kdm_file(repo_dir)
 
-                                # Process extracted kdm file
-                                warnings = extract.etl_warnings(_get_kdm_file_output_path(repo_dir), repo_dir, commit['repo'], commit['commit'])
+                                if os.path.isfile(kdm_file):
 
-                                # Save warnings to db
-                                service_db.add_commit_warning_lines(warnings)
+                                    # Process extracted kdm file
+                                    warnings = extract.etl_warnings(_get_kdm_file_output_path(repo_dir), repo_dir, commit['repo'], commit['commit'])
 
-                                # Get the line blames
-                                line_blames = _get_line_blames(repo_dir, warnings)
+                                    # Save warnings to db
+                                    service_db.add_commit_warning_lines(warnings)
 
-                                for blame in line_blames:
-                                    blame['repo_id'] = repo_id
-                                    blame['commit_id'] = commit_hash
+                                    # Get the line blames
+                                    line_blames = _get_line_blames(repo_dir, warnings)
 
-                                service_db.add_commit_warning_blames(line_blames)
+                                    for blame in line_blames:
+                                        blame['repo_id'] = repo_id
+                                        blame['commit_id'] = commit_hash
 
-                                # Get the commit parent history
-                                parent_commit_history = _get_commit_parents(repo_dir, repo_id)
-                                service_db.add_commit_history_graph(parent_commit_history)
+                                    service_db.add_commit_warning_blames(line_blames)
+
+                                    # Get the commit parent history
+                                    parent_commit_history = _get_commit_parents(repo_dir, repo_id)
+                                    service_db.add_commit_history_graph(parent_commit_history)
+
+
+                                else:
+                                    log = "\n".join((log, "file %s does not exist. this is not normal as zip file existed"
+                                                    % kdm_file))
+                                    commit_result = "TOOL ERROR"
 
 
                             else:
-                                log = "\n".join((log, "file %s does not exist. this is not normal as zip file existed"
-                                                % kdm_file))
-                                mvn_result = "TOOL ERROR"
+                                log = "\n".join((log, "file %s does not exist. This could be normal as it is possible that"
+                                                     " no files were run" % zip_kdm_file))
 
-
-                        else:
-                            log = "\n".join((log, "file %s does not exist. This could be normal as it is possible that"
-                                                 " no files were run" % zip_kdm_file))
-
-                    service_db.processed_commit(commit['repo'], commit['commit'], mvn_result, log=log)
+                    service_db.processed_commit(commit['repo'], commit['commit'], commit_result, log=log)
 
             else:
                 print "No new tasks to run. Going to sleep for %s minutes" % BACKGROUND_SLEEP_MINUTES
