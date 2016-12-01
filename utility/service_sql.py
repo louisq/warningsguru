@@ -37,7 +37,7 @@ class Service_DB:
                     FROM COMMITS
                     WHERE COMMITS.COMMIT_HASH NOT IN (SELECT COMMIT FROM STATIC_COMMIT_PROCESSED AS PROCESSED)
                     AND repository_id = '%s'
-                    ORDER BY author_date_unix_timestamp
+                    ORDER BY author_date_unix_timestamp DESC
                     LIMIT 10;
                     """ % config.REPO_TO_ANALYSE
         else:
@@ -45,7 +45,7 @@ class Service_DB:
                     SELECT repository_id, commit_hash
                     FROM COMMITS
                     WHERE COMMITS.COMMIT_HASH NOT IN (SELECT COMMIT FROM STATIC_COMMIT_PROCESSED AS PROCESSED)
-                    ORDER BY author_date_unix_timestamp
+                    ORDER BY author_date_unix_timestamp DESC
                     LIMIT 10;
                     """
 
