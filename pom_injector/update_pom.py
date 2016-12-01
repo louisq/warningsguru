@@ -31,19 +31,11 @@ PLUGIN = """
   <configuration>
       <executable>python</executable>
       <workingDirectory>target/classes/</workingDirectory>
-      <arguments>
-          <argument>{runner_path}</argument>
-          <argument>{repo_path}</argument>
-          <argument>{adaptor_output_dir}</argument>
-          <argument>{housekeeping_path}</argument>
-      </arguments>
-
+      <commandlineArgs>{runner_path} {repo_path} {adaptor_output_dir} {housekeeping_path}</commandlineArgs>
   </configuration>
   <executions>
-
       <execution>
-
-          <id>python-build</id>
+          <id>staticguru_runadaptors</id>
           <phase>prepare-package</phase>
           <goals>
               <goal>exec</goal>
