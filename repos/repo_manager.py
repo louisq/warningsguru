@@ -1,32 +1,43 @@
 import os
+import subprocess
 from shutil import copytree, rmtree
 
 # The purpose of this utility is to prevent conflicts between commitguru and staticguru
 import config
 
 
-def load_repository(repository):
+def load_repository(repository_id, manager_repo_path, commit):
     # We don't need to copy the whole repository. We only need to copy .git to then extract it
     # TODO add support to load from NFS
 
-    # Need a way of knowing that commitguru is not currently working on a commit.
-    # 1. Use status that would prevent cg ingester from attempting to update it
-    # 2. Only attempt to analyse repositories that are not being analysed.
-    #     Don't want to become on the time thought
-
     # for git repositories
-    commitguru_repo_path = os.path.join(config.COMMITGURU_REPOSITORY_PATH, repository)
-    manager_repo_path = _get_manager_repository_path(repository)
+    commitguru_repo_path = os.path.join(config.COMMITGURU_REPOSITORY_PATH, repository_id)
 
-    if not config.DISABLE_REPO_RESET:
-        # TODO don't run the delete function every single time
+    commit_in_repo = is_commit_in_repository(manager_repo_path, commit)
+
+    if not commit_in_repo:
+        print "commit %s is not in repo %s. Attempting to reload repo from commitguru" % (commit, manager_repo_path)
         if os.path.exists(manager_repo_path):
             rmtree(manager_repo_path)
 
-        # TODO We might not need to copy everything each time, we could just download the git repo folder
         copytree(commitguru_repo_path, manager_repo_path)
 
+        commit_in_repo = is_commit_in_repository(manager_repo_path, commit)
 
-def _get_manager_repository_path(repository):
-    return os.path.join(config.REPOSITORY_CACHE_PATH, repository)
+        if not commit_in_repo:
+            print "Commit %s not in repo" % commit
 
+    return commit_in_repo
+
+
+def is_commit_in_repository(repository, commit):
+
+    if os.path.exists(repository):
+
+        process = subprocess.Popen("git cat-file -t %s" % commit,
+                                   shell=True, cwd=repository, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        # git will return "commit" if the commit hash is in the repository
+        return 'commit' in process.communicate()[0]
+
+    else:
+        return False
