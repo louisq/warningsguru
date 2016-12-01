@@ -6,7 +6,7 @@ import sys
 from git import Repo
 import re
 
-from config import TOIF_EXECUTABLE
+TOIF_EXECUTABLE = "/home/louisq/toif/toif/toif"
 
 __author__ = 'louisq'
 
@@ -19,7 +19,7 @@ class Adaptors:
 
     # Depends on the directory structure git/{organisation}/{project}
     REPO_REGEX = re.compile("(.+/git/(\w+)/(\w+))")
-    JAVA_REGEX = re.compile("\./((?:\w+/)+\w+)(?:\$\w+)*\.class")
+    JAVA_REGEX = re.compile("\./((?:[\w_-]+/)+[\w_-]+)(?:\$[\w\$]*)*\.class")
 
     MAXIMUM_NUMBER_OF_PROCESSES = 48
     SUB_PROCESS = []  # Do not modify this line
@@ -47,7 +47,7 @@ class Adaptors:
         repo = Repo(self.REPO_PATH)
         # commit_hash = repo.head.commit.hexsha
         modified_files = repo.head.commit.stats.files.keys()
-        print modified_files
+        #print "modified files: %s" % str(modified_files)
 
         # self.OUTPUT_DIR = os.path.join(self.OUTPUT_DIR, project_path, commit_hash)
 
@@ -68,6 +68,8 @@ class Adaptors:
 
                     # print file_path
                     self.list_of_files.append(file_path)
+                    #print "File path: %s" % str(file_path)
+
 
                     if self._file_in_commit(modified_files, file_path):
                         self._run_all_adaptors_on_file(os.path.abspath(file_path), path, file_name)
@@ -96,7 +98,13 @@ class Adaptors:
 
     def _file_in_commit(self, modified_files, file_path):
 
-        clean_path = self.JAVA_REGEX.match(file_path).groups()[0]
+        match = self.JAVA_REGEX.match(file_path).groups()
+
+        if not match or len(match) == 0:
+            print "FAILED REGEX on %s" % file_path
+            return False
+
+        clean_path = match[0]
 
         for modified_file in modified_files:
             if clean_path in modified_file:
