@@ -38,7 +38,7 @@ def load_repository(repository_id, manager_repo_path, commit):
     commit_in_repo = is_commit_in_repository(manager_repo_path, commit)
 
     if not commit_in_repo:
-        logger.warning("commit %s is not in repo %s. Attempting to reload repo from commitguru" % (commit, manager_repo_path))
+        logger.warning("%s: commit not in repo %s. Attempting to reload repo from commitguru" % (commit, manager_repo_path))
         if os.path.exists(manager_repo_path):
             rmtree(manager_repo_path)
 
@@ -47,7 +47,7 @@ def load_repository(repository_id, manager_repo_path, commit):
         commit_in_repo = is_commit_in_repository(manager_repo_path, commit)
 
         if not commit_in_repo:
-            logger.error("Commit %s not in repository %s" % (commit, repository_id))
+            logger.error("%s: Commit not in updated repository %s" % (commit, repository_id))
 
     return commit_in_repo
 

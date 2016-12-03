@@ -32,7 +32,7 @@ from utility.Logging import logger
 class GIT (VCS):
 
     def checkout(self, repo_path, commit):
-        logger.info("Checking out %s from %s" % (commit['commit'], repo_path))
+        logger.info("%s: Checking out commit from %s" % (commit['commit'], repo_path))
         subprocess.call("git reset --hard; git clean -df; git checkout %s" % commit['commit'], shell=True, cwd=repo_path)
 
     def get_current_commit_graph(self, repo_path):

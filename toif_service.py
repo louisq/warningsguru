@@ -88,7 +88,7 @@ class AdaptorRunner:
                         commit_result, log = process_inject_run_commit(commit, repo_dir)
 
                         if commit_result == BUILD:
-                            logger.info("Build successful, now running TOIF assimilator")
+                            logger.info("%s: Running TOIF file warnings assimilator" % commit_hash)
                             # Build was successful so we can continue
                             log = "\n".join((log, run_assimilator(repo_dir)))
 
@@ -102,15 +102,16 @@ class AdaptorRunner:
                                 if os.path.isfile(kdm_file):
 
                                     # Process extracted kdm file
-                                    logger.info("Extracting warnings")
-                                    warnings = extract.etl_warnings(_get_kdm_file_output_path(repo_dir), repo_dir, commit['repo'], commit['commit'])
-                                    logger.info("%s warnings have been identified in commit %s" % (len(warnings), commit_hash))
+                                    logger.info("%s: Extracting warnings" % commit_hash)
+                                    warnings = extract.etl_warnings(_get_kdm_file_output_path(repo_dir), repo_dir,
+                                                                    commit['repo'], commit['commit'])
+                                    logger.info("%s: %s warnings identified" % (commit_hash, len(warnings)))
 
                                     # Save warnings to db
                                     service_db.add_commit_warning_lines(warnings)
 
                                     # Get the line blames
-                                    logger.info("Obtaining history of warnings")
+                                    logger.info("%s: Obtaining history of warnings", commit_hash)
                                     line_blames = _get_line_blames(repo_dir, warnings)
 
                                     for blame in line_blames:
@@ -120,18 +121,22 @@ class AdaptorRunner:
                                     service_db.add_commit_warning_blames(line_blames)
 
                                     # Get the commit parent history
-                                    logger.info("Getting the commit parents")
+                                    logger.info("%s: Getting the commit parents" % commit_hash)
                                     parent_commit_history = _get_commit_parents(repo_dir, repo_id)
                                     service_db.add_commit_history_graph(parent_commit_history)
 
 
                                 else:
+                                    logger.error("%s: file %s does not exist. this is not normal as zip file "
+                                                 "existed" % (commit_hash, kdm_file))
                                     log = "\n".join((log, "file %s does not exist. this is not normal as zip file existed"
                                                     % kdm_file))
                                     commit_result = "TOOL ERROR"
 
 
                             else:
+                                logger.info("%s: file %s does not exist. No file might have been analysed by"
+                                            "static analysis tools" % (commit_hash, zip_kdm_file))
                                 log = "\n".join((log, "file %s does not exist. This could be normal as it is possible that"
                                                      " no files were run" % zip_kdm_file))
 
@@ -142,41 +147,29 @@ class AdaptorRunner:
                 time.sleep(BACKGROUND_SLEEP_MINUTES*60)
 
 
-
-    """
-    1. get commits from commitguru that have not been ran by adaptor yet
-    2. Prepare maven pom file
-    """
-
-    """
-    -- static process commit table
-    repo commit status build date
-
-    -- static file warnings
-    repo commit
-    """
-
 runner_base_dir_path = os.path.abspath(os.path.join(os.path.curdir, 'maven_toif_runner'))
 
 
 def process_inject_run_commit(commit, repo_dir):
 
-    logger.info("Checking out %s from %s" % (commit['commit'], repo_dir))
-    subprocess.call("git reset --hard; git clean -df; git checkout %s" % commit['commit'], shell=True, cwd=repo_dir)
+    logger.info("%s: Checking out commit from %s" % (commit['commit'], repo_dir))
+    process = subprocess.Popen("git reset --hard; git clean -df; git checkout %s" % commit['commit'], shell=True,
+                               cwd=repo_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    logger.info("%s: %s" % (commit['commit'], "".join(map(str, process.communicate()))))
 
     # Check if it's a maven project
     pom_file_path = os.path.join(repo_dir, "pom.xml")
     pom_exists = os.path.exists(pom_file_path)
 
     if not pom_exists:
-        logger.info("Missing POM - Nothing to build")
+        logger.info("%s: Missing POM - Nothing to build" % commit['commit'])
         return "MISSING POM", ""
 
     adaptor_dir_path = _get_adaptor_output_dir_path(repo_dir)
 
     # Attempt to update the pom file
     if not update_pom(pom_file_path, runner_base_dir_path, repo_dir, adaptor_dir_path):
-        logger.error("Failed to inject staticguru in POM - Commit: %s, Repo: %s" % (commit['commit'], commit['repo']))
+        logger.error("%s: Failed to inject staticguru in POM" % commit['commit'])
         return "INJECTION FAILED", ""
 
     # Ensure that the repository is clean
@@ -186,15 +179,15 @@ def process_inject_run_commit(commit, repo_dir):
     if not os.path.exists(adaptor_dir_path):
         os.makedirs(adaptor_dir_path)
 
-    logger.info("Building %s and running TOIF adaptors" % commit['commit'])
+    logger.info("%s: Building and running TOIF adaptors" % commit['commit'])
     process = subprocess.Popen("mvn -T 1C package -DskipTests exec:exec", shell=True, cwd=repo_dir, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     maven_logs = process.communicate()[0]
 
     if process.returncode == 0:
-        logger.info("Build Success - Commit: %s" % commit['commit'])
+        logger.info("%s: Build Success" % commit['commit'])
         return BUILD, maven_logs
     else:
-        logger.warning("Build Failed")
+        logger.warning("%s: Build Failed" % commit['commit'])
         return "FAILURE", maven_logs
 
 
