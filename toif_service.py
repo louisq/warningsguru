@@ -135,7 +135,7 @@ class AdaptorRunner:
 
 
                             else:
-                                logger.info("%s: file %s does not exist. No file might have been analysed by"
+                                logger.info("%s: file %s does not exist. No file might have been analysed by "
                                             "static analysis tools" % (commit_hash, zip_kdm_file))
                                 log = "\n".join((log, "file %s does not exist. This could be normal as it is possible that"
                                                      " no files were run" % zip_kdm_file))
