@@ -25,16 +25,14 @@ import os
 import re
 import subprocess
 
-#todo List of things that would have to be completed
-# Take into account the dag
-#
 from repos.vcs_generic import VCS
+from utility.Logging import logger
 
 
 class GIT (VCS):
 
     def checkout(self, repo_path, commit):
-        print("Checking out %s from %s" % (commit['commit'], os.getcwd()))
+        logger.info("Checking out %s from %s" % (commit['commit'], repo_path))
         subprocess.call("git reset --hard; git clean -df; git checkout %s" % commit['commit'], shell=True, cwd=repo_path)
 
     def get_current_commit_graph(self, repo_path):
@@ -61,8 +59,7 @@ class GIT (VCS):
 
         return result
 
-
-        """
+    """
     This specific method will be returning the information regarding the line blame for the lines that have been provided as
     having a warning
     returns [{"origin_commit": "", 'origin_resource': "", 'origin_line': "", 'line': "", 'is_new_line': boolean}]

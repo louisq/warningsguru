@@ -19,8 +19,8 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
-import logging
 import psycopg2
+from utility.Logging import logger
 
 
 class Postgres:
@@ -31,16 +31,14 @@ class Postgres:
     DATABASE_PASSWORD = ""
 
     def __init__(self, db_config):
-        self.logger = logging.getLogger("Postgres")
 
-        # db_config = settings.get_local_settings()
         if db_config:
             self.DATABASE_HOST = db_config['DATABASE_HOST']
             self.DATABASE_NAME = db_config['DATABASE_NAME']
             self.DATABASE_USERNAME = db_config['DATABASE_USERNAME']
             self.DATABASE_PASSWORD = db_config['DATABASE_PASSWORD']
         else:
-            print "db_config not configured"
+            logger.error("db_config not configured")
 
         try:
             if self.DATABASE_PASSWORD:
@@ -53,7 +51,7 @@ class Postgres:
             self.db = db
 
         except Exception as e:
-            print "Failed to connect to database: %s" % e.message
+            logger.error("Failed to connect to database: %s" % e.message)
 
     def get_cursor(self):
         return self.db.cursor()

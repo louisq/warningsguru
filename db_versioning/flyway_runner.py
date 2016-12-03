@@ -43,7 +43,7 @@ def migrate_db(host, port, database, username, password):
     return_code = process.returncode
 
     if return_code != 0:
-        logger.warn(result)
+        logger.fatal(result)
         raise RuntimeError("Application failed to update or validate the state of it's database. Check the logs to "
                            "fix the current issue.")
     logger.info(result)

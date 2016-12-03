@@ -34,12 +34,8 @@ augmented commitguru as individual, toif view tsv compatible format.
 
 def etl_warnings(kdm_file_path, project_root_directory, repo_id, commit_id):
 
-#     warnings = _get_warnings(kdm_file_path=kdm_file_path, project_root_directory=project_root_directory)
-#     _save_warnings_in_db(repo_id, commit_id, warnings)
-#     pass
-#
-#
-# def _get_warnings(kdm_file_path, project_root_directory, repo):
+    # TODO determine if this component can be replaced by the new toif tsv component
+
     toif_components = extractfile(kdm_file_path)
 
     # Obtain association of static analysers to warnings

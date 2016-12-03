@@ -22,6 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SO
 import os
 import re
 
+from utility.Logging import logger
+
 PLUGINS_PATTERN = re.compile("(<plugins>)", re.MULTILINE)
 
 PLUGIN = """
@@ -65,10 +67,12 @@ def update_pom(pom_file_path, tool_root_path, repo_path, adaptor_output_dir):
     # TODO need to log message if we are unable to inject toif in pom file
 
     if plugin_tag_location.end() < 0:
-        pass
+        return False
 
     updated_pom_file = pom_file[0:plugin_tag_location.end()] + plugin + pom_file[plugin_tag_location.end():len(pom_file)]
 
     f = open(pom_file_path, 'w')
     f.write(updated_pom_file)
     f.close()
+
+    return True

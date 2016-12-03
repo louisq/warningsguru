@@ -20,22 +20,37 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SO
 """
 
 import logging
+import logging.handlers
 
 # create logger
 import sys
 
 logger = logging.getLogger('staticguru')
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
+# todo only log to stdout when in dev
 # create console handler and set level to debug
 ch = logging.StreamHandler(stream=sys.stdout)
 ch.setLevel(logging.DEBUG)
 
 # create formatter
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter('%(threadName)s - %(levelname)s - %(message)s')
 
 # add formatter to ch
 ch.setFormatter(formatter)
 
 # add ch to logger
 logger.addHandler(ch)
+
+# Logger to the file
+file_handler = logging.handlers.TimedRotatingFileHandler("log/test.log", when="W0")
+file_handler.setLevel(logging.INFO)
+
+# create formatter
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(threadName)s - %(levelname)s - %(message)s')
+
+# add formatter to ch
+file_handler.setFormatter(formatter)
+
+# add ch to logger
+logger.addHandler(file_handler)
