@@ -18,6 +18,7 @@ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FO
 DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
+from datetime import datetime
 
 import config
 from postgres import Postgres
@@ -33,7 +34,7 @@ class Service_DB:
 
         if config.REPO_TO_ANALYSE:
             query = """
-                    SELECT repository_id, commit_hash
+                    SELECT repository_id, commit_hash, author_date
                     FROM COMMITS
                     WHERE COMMITS.COMMIT_HASH NOT IN (SELECT COMMIT FROM STATIC_COMMIT_PROCESSED AS PROCESSED)
                     AND repository_id = '%s'
@@ -54,11 +55,16 @@ class Service_DB:
 
         REPO = 0
         COMMIT = 1
+        AUTHOR_DATE = 2
 
         commits = []
 
+        #datetime.strptime('Tue Jun 28 23:29:52 2016 -0700'[], '%a %b %d %H:%M:%S %Y %z')
         for row in rows:
-            commits.append({"repo": row[REPO], "commit": row[COMMIT]})
+            raw_author_date = row[AUTHOR_DATE]
+            # Strip off the timezone not to have to deal with it
+            author_datetime = datetime.strptime(raw_author_date[:len(raw_author_date)-6], '%a %b %d %H:%M:%S %Y')
+            commits.append({"repo": row[REPO], "commit": row[COMMIT], "author_date": author_datetime})
 
         return commits
 

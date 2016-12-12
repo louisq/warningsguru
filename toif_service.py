@@ -25,7 +25,7 @@ The purpose of this script is to automatically run the TOIF adaptors on each com
 import subprocess
 import time
 from time import sleep
-import os
+from datetime import date
 
 from db_versioning import flyway_runner
 from pom_injector.update_pom import update_pom
@@ -180,7 +180,14 @@ def process_inject_run_commit(commit, repo_dir):
         os.makedirs(adaptor_dir_path)
 
     logger.info("%s: Building and running TOIF adaptors" % commit['commit'])
-    process = subprocess.Popen("mvn -T 1C package -DskipTests exec:exec", shell=True, cwd=repo_dir, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
+    jdk_override = ''
+    # TODO replace with configurable system that would work for multiple jdks and paths
+    if date(2014, 3, 18) > commit['author_date'].date():
+        logger.info("%s: Overriding JDK to use version 1.7" % commit['commit'])
+        jdk_override = 'JAVA_HOME="/usr/lib/jvm/jdk1.7.0_79/"'
+
+    process = subprocess.Popen("%s mvn -T 1C package -DskipTests exec:exec" % jdk_override, shell=True, cwd=repo_dir, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     maven_logs = process.communicate()[0]
 
     if process.returncode == 0:
