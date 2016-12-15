@@ -168,7 +168,7 @@ def process_inject_run_commit(commit, repo_dir):
     adaptor_dir_path = _get_adaptor_output_dir_path(repo_dir)
 
     # Attempt to update the pom file
-    if not update_pom(pom_file_path, runner_base_dir_path, repo_dir, adaptor_dir_path):
+    if not update_pom(pom_file_path, runner_base_dir_path, repo_dir, adaptor_dir_path, commit['commit']):
         logger.error("%s: Failed to inject staticguru in POM" % commit['commit'])
         return "INJECTION FAILED", ""
 
