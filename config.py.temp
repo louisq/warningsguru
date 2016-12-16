@@ -46,8 +46,11 @@ DATABASE_SETTINGS = {
     "DATABASE_PASSWORD": "password"
 }
 
-# If a commit guru repo id is provided
+# Will only run one repo from commitguru if specified
 # REPO_TO_ANALYSE = "42e73e16-e20a-4b17-99a3-4dd7b35a6155"
+# If a list of commitguru repos is provided it will run on all of the specified repositories
+# REPO_TO_ANALYSE = ["42e73e16-e20a-4b17-99a3-4dd7b35a6155", "78da3c6e-a7fd-47b4-a9ec-031d81704622"]
+# If no repo is specified it will run on all of them
 REPO_TO_ANALYSE = None
 
 # If TOIF is not configured in session

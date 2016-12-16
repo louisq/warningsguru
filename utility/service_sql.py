@@ -30,17 +30,29 @@ class Service_DB:
         self.REPROCESS_FAILURES_HOURS = reprocess_failures_hours
 
     def get_unprocessed_commits(self):
+
         cursor = self.db.get_cursor()
 
         if config.REPO_TO_ANALYSE:
+
+            # determine if it is a string or a list
+            if isinstance(config.REPO_TO_ANALYSE, (list, tuple)) and not isinstance(config.REPO_TO_ANALYSE, (str, basestring)):
+                equality = "in"
+                value = tuple(config.REPO_TO_ANALYSE)
+            else:
+                equality = "="
+                value = config.REPO_TO_ANALYSE
+
             query = """
                     SELECT repository_id, commit_hash, author_date
                     FROM COMMITS
                     WHERE COMMITS.COMMIT_HASH NOT IN (SELECT COMMIT FROM STATIC_COMMIT_PROCESSED AS PROCESSED)
-                    AND repository_id = '%s'
+                    AND repository_id {equality} %s
                     ORDER BY author_date_unix_timestamp DESC
                     LIMIT 10;
-                    """ % config.REPO_TO_ANALYSE
+                    """.format(equality=equality)
+
+            cursor.execute(query, (value, ))
         else:
             query = """
                     SELECT repository_id, commit_hash
@@ -50,7 +62,7 @@ class Service_DB:
                     LIMIT 10;
                     """
 
-        cursor.execute(query)
+            cursor.execute(query)
         rows = cursor.fetchall()
 
         REPO = 0
