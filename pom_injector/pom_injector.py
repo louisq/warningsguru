@@ -49,13 +49,13 @@ def _update_pom(file_path, plugin_xml, namespace, commit):
     tree = etree.parse(file_path)
     build = tree.getroot().find("./a:build", namespaces={"a": namespace})
 
-    if build:
+    if build is not None:
         plugin_management = build.find("./a:pluginManagement", namespaces={"a": namespace})
 
-        if plugin_management:
+        if plugin_management is not None:
             plugins = plugin_management.find("./a:plugins", namespaces={"a": namespace})
 
-            if plugins:
+            if plugins is not None:
                 plugins.append(etree.fromstring(plugin_xml))
 
             else:
