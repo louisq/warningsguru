@@ -46,6 +46,7 @@ on your system and install the following libraries:
 
     pip install psycopg2
     pip install gitpython
+    pip install lxml
 
 ### Others
 

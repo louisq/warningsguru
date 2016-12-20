@@ -28,7 +28,7 @@ from time import sleep
 from datetime import date
 
 from db_versioning import flyway_runner
-from pom_injector.update_pom import update_pom
+from pom_injector.pom_injector import pom_injector
 from kdm_extractor import extract
 from repos.repo_manager import load_repository
 from repos.git import GIT
@@ -168,7 +168,7 @@ def process_inject_run_commit(commit, repo_dir):
     adaptor_dir_path = _get_adaptor_output_dir_path(repo_dir)
 
     # Attempt to update the pom file
-    if not update_pom(pom_file_path, runner_base_dir_path, repo_dir, adaptor_dir_path, commit['commit']):
+    if not pom_injector(pom_file_path, runner_base_dir_path, repo_dir, adaptor_dir_path, commit['commit']):
         logger.error("%s: Failed to inject staticguru in POM" % commit['commit'])
         return "INJECTION FAILED", ""
 
