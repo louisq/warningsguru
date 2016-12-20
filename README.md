@@ -67,6 +67,9 @@ The following fields need to be updated
  configuration. The name of the directory shall be your local username
  where the script is being executed from
  - [ ] TOIF_EXECUTABLE : Full path to the TOIF instance
+ - [ ] JDK_OVERRIDE : Configure other instances of legacy jdks to ensure that older commits can be compiled correctly. 
+ Newer releases do not always behave exactly like older releases when building on an older target in which case it is 
+ possible to tell staticguru to use a different jdks
  
  The database will be created on the first run of StaticGuru
 
