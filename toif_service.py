@@ -25,13 +25,13 @@ The purpose of this script is to automatically run the TOIF adaptors on each com
 import subprocess
 import time
 from time import sleep
-from datetime import date
 
 from db_versioning import flyway_runner
 from pom_injector.pom_injector import pom_injector
 from kdm_extractor import extract
 from repos.repo_manager import load_repository
 from repos.git import GIT
+from utility.jdk import JdkOverride
 from utility.Logging import logger
 from utility.service_sql import *
 
@@ -54,6 +54,13 @@ class AdaptorRunner:
 
         # Checking the state of database and attempting to migrate if necessary
         flyway_runner.migrate_db(db[DATABASE_HOST], db[DATABASE_PORT], db[DATABASE_NAME], db[DATABASE_USERNAME], db[DATABASE_PASSWORD])
+
+        # Load override jdks
+        if "JDK_OVERRIDE" in dir(config) and isinstance(config.JDK_OVERRIDE, list):
+            self.jdk_override = JdkOverride(config.JDK_OVERRIDE)
+            logger.info("Loaded the following JDK overrides %s" % str(self.jdk_override.overrides))
+        else:
+            logger.warn("JDK_OVERRIDE is missing from config file")
 
         # Once everything as been validated we can start the service
         logger.info("Service prerequisites check complete. Starting %s" % PROJECT_NAME)
@@ -85,7 +92,7 @@ class AdaptorRunner:
                         log = "repo or commit not loaded"
                     else:
 
-                        commit_result, log = process_inject_run_commit(commit, repo_dir)
+                        commit_result, log = process_inject_run_commit(commit, repo_dir, self.jdk_override)
 
                         if commit_result == BUILD:
                             logger.info("%s: Running TOIF file warnings assimilator" % commit_hash)
@@ -150,7 +157,7 @@ class AdaptorRunner:
 runner_base_dir_path = os.path.abspath(os.path.join(os.path.curdir, 'maven_toif_runner'))
 
 
-def process_inject_run_commit(commit, repo_dir):
+def process_inject_run_commit(commit, repo_dir, jdk_overrides):
 
     logger.info("%s: Checking out commit from %s" % (commit['commit'], repo_dir))
     process = subprocess.Popen("git reset --hard; git clean -df; git checkout %s" % commit['commit'], shell=True,
@@ -168,6 +175,7 @@ def process_inject_run_commit(commit, repo_dir):
     adaptor_dir_path = _get_adaptor_output_dir_path(repo_dir)
 
     # Attempt to update the pom file
+    logger.info("%s: Injecting staticguru in POM" % commit['commit'])
     if not pom_injector(pom_file_path, runner_base_dir_path, repo_dir, adaptor_dir_path, commit['commit']):
         logger.error("%s: Failed to inject staticguru in POM" % commit['commit'])
         return "INJECTION FAILED", ""
@@ -179,15 +187,18 @@ def process_inject_run_commit(commit, repo_dir):
     if not os.path.exists(adaptor_dir_path):
         os.makedirs(adaptor_dir_path)
 
+    # Determine if we need to override the jdk
+    jdk = jdk_overrides.get_jdk_override(commit['author_date'].date())
+    if jdk:
+        logger.info("%s: Overriding JDK to use version %s" % (commit['commit'], jdk['version']))
+        jdk_value = 'JAVA_HOME="%s"' % jdk['path']
+    else:
+        jdk_value = ''
+
     logger.info("%s: Building and running TOIF adaptors" % commit['commit'])
-
-    jdk_override = ''
-    # TODO replace with configurable system that would work for multiple jdks and paths
-    if date(2014, 3, 18) > commit['author_date'].date():
-        logger.info("%s: Overriding JDK to use version 1.7" % commit['commit'])
-        jdk_override = 'JAVA_HOME="/usr/lib/jvm/jdk1.7.0_79/"'
-
-    process = subprocess.Popen("%s mvn -T 1C package -DskipTests exec:exec" % jdk_override, shell=True, cwd=repo_dir, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    # run the commit build
+    process = subprocess.Popen("%s mvn -T 1C package -DskipTests exec:exec" % jdk_value, shell=True, cwd=repo_dir,
+                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     maven_logs = process.communicate()[0]
 
     if process.returncode == 0:

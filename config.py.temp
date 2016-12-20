@@ -25,6 +25,7 @@ Settings for the staticguru tool
 
 import os
 import pwd
+from datetime import date
 
 BACKGROUND_SLEEP_MINUTES = 10
 
@@ -52,6 +53,12 @@ DATABASE_SETTINGS = {
 # REPO_TO_ANALYSE = ["42e73e16-e20a-4b17-99a3-4dd7b35a6155", "78da3c6e-a7fd-47b4-a9ec-031d81704622"]
 # If no repo is specified it will run on all of them
 REPO_TO_ANALYSE = None
+
+# Specify other jdks to allow legacy commits to be compiled correctly on older jdks where newer jdks don't build for
+# legacy targets correctly
+JDK_OVERRIDE = [
+    # {"version": "1.7.0", "path": "/usr/lib/jvm/jdk1.7.0_79/", "end_date": date(2014, 3, 18)}
+]
 
 # If TOIF is not configured in session
 TOIF_EXECUTABLE = "/{path to toif binary}/toif"
