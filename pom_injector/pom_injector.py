@@ -53,7 +53,7 @@ def _update_pom(file_path, plugin_xml, namespace, commit):
         plugin_management = build.find("./a:pluginManagement", namespaces={"a": namespace})
 
         if plugin_management:
-            plugins = plugin_management.find("./a:pluginsd", namespaces={"a": namespace})
+            plugins = plugin_management.find("./a:plugins", namespaces={"a": namespace})
 
             if plugins:
                 plugins.append(etree.fromstring(plugin_xml))
