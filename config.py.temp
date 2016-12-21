@@ -66,6 +66,10 @@ TOIF_EXECUTABLE = "/{path to toif binary}/toif"
 ADAPTOR_OUTPUT_DIR = "target/toif_run"
 KDM_FILE = "assimilated.kdm"
 
+# StaticGuru can save the build artifacts. I enabled it will create a tar.gz of build artifacts, excluding jars, zips and other compressed artifacts
+ARTIFACT_ARCHIVER = False
+ARTIFACT_ARCHIVER_PATH = "path/to/archive"
+
 REPROCESS_FAILURES_HOURS = 1
 
 def get_local_settings():
