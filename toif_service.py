@@ -129,19 +129,12 @@ class AdaptorRunner:
 
                                     service_db.add_commit_warning_blames(line_blames)
 
-                                    # Get the commit parent history
-                                    logger.info("%s: Getting the commit parents" % commit_hash)
-                                    parent_commit_history = _get_commit_parents(repo_dir, repo_id)
-                                    service_db.add_commit_history_graph(parent_commit_history)
-
-
                                 else:
                                     logger.error("%s: file %s does not exist. this is not normal as zip file "
                                                  "existed" % (commit_hash, kdm_file))
                                     log = "\n".join((log, "file %s does not exist. this is not normal as zip file existed"
                                                     % kdm_file))
                                     commit_result = "TOOL ERROR"
-
 
                             else:
                                 logger.info("%s: file %s does not exist. No file might have been analysed by "
@@ -158,6 +151,11 @@ class AdaptorRunner:
                                     logger.info("%s: Finished archiving of build artifacts" % commit_hash)
                             else:
                                 logger.warn("Build artifact archiving cannot be enabled if the archiving path is not specified")
+
+                    # Get the commit parent history
+                    logger.info("%s: Getting the commit parents" % commit_hash)
+                    parent_commit_history = _get_commit_parents(repo_dir, repo_id)
+                    service_db.add_commit_history_graph(parent_commit_history)
 
                     service_db.processed_commit(commit['repo'], commit['commit'], commit_result, log=log)
 
