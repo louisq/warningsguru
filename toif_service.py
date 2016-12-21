@@ -31,6 +31,7 @@ from pom_injector.pom_injector import pom_injector
 from kdm_extractor import extract
 from repos.repo_manager import load_repository
 from repos.git import GIT
+from utility.artifact_archiver import archive, artifact_archiver_version
 from utility.jdk import JdkOverride
 from utility.Logging import logger
 from utility.service_sql import *
@@ -147,6 +148,14 @@ class AdaptorRunner:
                                             "static analysis tools" % (commit_hash, zip_kdm_file))
                                 log = "\n".join((log, "file %s does not exist. This could be normal as it is possible that"
                                                      " no files were run" % zip_kdm_file))
+
+                        if ARTIFACT_ARCHIVER:
+                            if ARTIFACT_ARCHIVER_PATH:
+                                archiving_result = archive(repo_dir, ARTIFACT_ARCHIVER_PATH, repo_id, commit_hash)
+                                if archiving_result:
+                                    service_db.commit_log_tool(repo_id, commit, 'artifacts_archived', artifact_archiver_version)
+                            else:
+                                logger.warn("Artifact archiving cannot be enabled if the path is not specified")
 
                     service_db.processed_commit(commit['repo'], commit['commit'], commit_result, log=log)
 

@@ -23,11 +23,14 @@ from datetime import datetime
 import config
 from postgres import Postgres
 
+from utility.Logging import logger
+
 class Service_DB:
 
     def __init__(self, reprocess_failures_hours):
         self.db = Postgres(config.get_local_settings())
         self.REPROCESS_FAILURES_HOURS = reprocess_failures_hours
+        self.COMMIT_LOG_TOOL_COLUMNS = frozenset('artifacts_archived')
 
     def get_unprocessed_commits(self):
 
@@ -124,6 +127,19 @@ class Service_DB:
              WHERE REPO = %s AND COMMIT = %s;
             """, (build, log, repo, commit))
         self.db.db.commit()
+
+    def commit_log_tool(self, repo, commit, column, value):
+
+        if column not in self.COMMIT_LOG_TOOL_COLUMNS:
+            logger.error("Column %s is not a log tool column" % column)
+        else:
+            cursor = self.db.get_cursor()
+
+            cursor.execute("""
+                    UPDATE STATIC_COMMIT_PROCESSED
+                     SET %s = %s
+                     WHERE REPO = %s AND COMMIT = %s;
+                    """, (column, value, repo, commit))
 
     def add_commit_warning_lines(self, warnings):
 

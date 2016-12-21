@@ -31,6 +31,9 @@ This version would probably only work for maven run projects
 
 FILTERED_EXTENSIONS = ('*.jar', '*.tar.*', '*.zip', '*.rpm')
 
+# todo replace with an abstract solution that could be reused for the other modules to log the version that was ran
+artifact_archiver_version = 1
+
 
 def archive(repo_path, archive_path, repo_id, commit, filter_extensions=True):
 
@@ -102,6 +105,7 @@ def _clone_files_in_targets(repo_path, archive_temp, target_directories, filter_
 
 def _compress_files(archive_temp, archive_compress_file_no_ext):
 
+    # If the compression is changed the file extension needs to be changed as well in the parent method
     shutil._make_tarball(archive_compress_file_no_ext, archive_temp, compress="gzip")
 
     # Delete the temporary folder
