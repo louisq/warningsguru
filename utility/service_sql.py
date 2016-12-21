@@ -137,9 +137,9 @@ class Service_DB:
 
             cursor.execute("""
                     UPDATE STATIC_COMMIT_PROCESSED
-                     SET %s = %s
+                     SET {column} = %s
                      WHERE REPO = %s AND COMMIT = %s;
-                    """, (column, value, repo, commit))
+                    """.format(column=column), (value, repo, commit))
 
     def add_commit_warning_lines(self, warnings):
 
