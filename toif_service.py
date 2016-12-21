@@ -151,9 +151,11 @@ class AdaptorRunner:
 
                         if ARTIFACT_ARCHIVER:
                             if ARTIFACT_ARCHIVER_PATH:
+                                logger.info("%s: Build artifact archiving running as enabled" % commit_hash)
                                 archiving_result = archive(repo_dir, ARTIFACT_ARCHIVER_PATH, repo_id, commit_hash)
                                 if archiving_result:
                                     service_db.commit_log_tool(repo_id, commit, 'artifacts_archived', artifact_archiver_version)
+                                    logger.info("%s: Build artifact archiving completed" % commit_hash)
                             else:
                                 logger.warn("Artifact archiving cannot be enabled if the path is not specified")
 
