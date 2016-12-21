@@ -62,8 +62,6 @@ def update_pom(pom_file_path, tool_root_path, repo_path, adaptor_output_dir, com
         match = pattern.search(pom_file)
         logger.info("%s: Updated pom to remove exec-maven-plugin" % commit)
         pom_file = pom_file[:match.start()] + pom_file[match.end():]
-        pass
-
 
     plugin_tag_location = PLUGINS_PATTERN.search(pom_file)
 

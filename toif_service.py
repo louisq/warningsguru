@@ -60,6 +60,7 @@ class AdaptorRunner:
             self.jdk_override = JdkOverride(config.JDK_OVERRIDE)
             logger.info("Loaded the following JDK overrides %s" % str(self.jdk_override.overrides))
         else:
+            self.jdk_override = JdkOverride([])
             logger.warn("JDK_OVERRIDE is missing from config file")
 
         # Once everything as been validated we can start the service
