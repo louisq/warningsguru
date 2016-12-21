@@ -30,7 +30,7 @@ class Service_DB:
     def __init__(self, reprocess_failures_hours):
         self.db = Postgres(config.get_local_settings())
         self.REPROCESS_FAILURES_HOURS = reprocess_failures_hours
-        self.COMMIT_LOG_TOOL_COLUMNS = frozenset('artifacts_archived')
+        self.COMMIT_LOG_TOOL_COLUMNS = frozenset(["artifacts_archived"])
 
     def get_unprocessed_commits(self):
 
