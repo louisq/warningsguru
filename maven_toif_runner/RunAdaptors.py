@@ -117,7 +117,13 @@ class Adaptors:
 
     def _file_in_commit(self, modified_files, file_path):
 
-        match = self.JAVA_REGEX.match(file_path).groups()
+        file_path_match = self.JAVA_REGEX.match(file_path)
+
+        if not file_path_match:
+            print "Error for match on path %s" % file_path
+            return False
+
+        match = file_path_match.groups()
 
         if not match or len(match) == 0:
             print "FAILED REGEX on %s" % file_path
