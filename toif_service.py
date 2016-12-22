@@ -207,8 +207,8 @@ def process_inject_run_commit(commit, repo_dir, jdk_overrides):
 
     logger.info("%s: Building and running TOIF adaptors" % commit['commit'])
     # run the commit build
-    process = subprocess.Popen("%s mvn -T 1C package -DskipTests exec:exec" % jdk_value, shell=True, cwd=repo_dir,
-                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    process = subprocess.Popen('%s MAVEN_OPTS="%s" mvn -T 1C package -DskipTests exec:exec' % (jdk_value, MAVEN_OPTS),
+                               shell=True, cwd=repo_dir, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     maven_logs = process.communicate()[0]
 
     if process.returncode == 0:
