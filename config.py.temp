@@ -56,9 +56,14 @@ REPO_TO_ANALYSE = None
 
 # Specify other jdks to allow legacy commits to be compiled correctly on older jdks where newer jdks don't build for
 # legacy targets correctly
-JDK_OVERRIDE = [
-    # {"version": "1.7.0", "path": "/usr/lib/jvm/jdk1.7.0_79/", "end_date": date(2014, 3, 18)}
-]
+OVERRIDES = {
+    # "JDK": [
+    #     {"version": "1.7.0", "path": "/usr/lib/jvm/jdk1.7.0_79/", "end_date": date(2014, 3, 18)}
+    # ],
+    # "MVN": [
+    #     {"version": "3.0.5", "path": "/usr/lib/jvm/jdk1.7.0_79/", "end_date": date(2014, 3, 18)}
+    # ]
+}
 
 # If TOIF is not configured in session
 TOIF_EXECUTABLE = "/{path to toif binary}/toif"
