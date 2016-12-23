@@ -24,7 +24,7 @@ from utility.abstract_override import AbstractOverride
 class MvnOverride(AbstractOverride):
 
     def _get_override_format(self):
-        return '%'
+        return '%s'
 
     def _get_default_format(self):
         return 'mvn'

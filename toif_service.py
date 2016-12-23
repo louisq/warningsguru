@@ -117,7 +117,7 @@ class AdaptorRunner:
                         log = "repo or commit not loaded"
                     else:
 
-                        commit_result, log = process_inject_run_commit(commit, repo_dir, self.jdk_override)
+                        commit_result, log = self.process_inject_run_commit(commit, repo_dir)
 
                         if commit_result == BUILD:
                             logger.info("%s: Running TOIF file warnings assimilator" % commit_hash)
