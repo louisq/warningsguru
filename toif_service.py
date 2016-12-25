@@ -18,6 +18,7 @@ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FO
 DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
+from maven_toif_runner.post_build_runner import run
 
 """
 The purpose of this script is to automatically run the TOIF adaptors on each commit that commitguru as analysed.
@@ -202,24 +203,17 @@ class AdaptorRunner:
             logger.info("%s: Missing POM - Nothing to build" % commit_hash)
             return "MISSING POM", ""
 
-        adaptor_dir_path = _get_adaptor_output_dir_path(repo_dir)
-
-        # Attempt to update the pom file
-        logger.info("%s: Injecting staticguru in POM" % commit_hash)
-        runner_base_dir_path = os.path.abspath(os.path.join(os.path.curdir, 'maven_toif_runner'))
-        if not pom_injector(pom_file_path, runner_base_dir_path, repo_dir, adaptor_dir_path, commit_hash):
-            logger.error("%s: Failed to inject staticguru in POM" % commit_hash)
-            return "INJECTION FAILED", ""
+        # # Attempt to update the pom file
+        # logger.info("%s: Injecting staticguru in POM" % commit_hash)
+        # runner_base_dir_path = os.path.abspath(os.path.join(os.path.curdir, 'maven_toif_runner'))
+        # if not pom_injector(pom_file_path, runner_base_dir_path, repo_dir, adaptor_dir_path, commit_hash):
+        #     logger.error("%s: Failed to inject staticguru in POM" % commit_hash)
+        #     return "INJECTION FAILED", ""
 
         # Ensure that the repository is clean
         subprocess.Popen("mvn clean:clean", shell=True, cwd=repo_dir, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
-        # Create directory where to save toif adaptor files
-        if not os.path.exists(adaptor_dir_path):
-            os.makedirs(adaptor_dir_path)
-
         # Determine if we need to override the jdk
-
         author_date = commit['author_date'].date()
         jdk_value = self.jdk_override.get_override(commit_hash, author_date)
         mvn_value = self.mvn_override.get_override(commit_hash, author_date)
@@ -229,6 +223,12 @@ class AdaptorRunner:
         process = subprocess.Popen("{jdk} MAVEN_OPTS=\"{maven_options}\" {mvn} -T 1C package -DskipTests exec:exec".format(jdk=jdk_value, maven_options=MAVEN_OPTS,  mvn=mvn_value),
                                    shell=True, cwd=repo_dir, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         maven_logs = process.communicate()[0]
+
+        adaptor_dir_path = _get_adaptor_output_dir_path(repo_dir)
+        # Create directory where to save toif adaptor files
+        if not os.path.exists(adaptor_dir_path):
+            os.makedirs(adaptor_dir_path)
+        run(repo_dir, adaptor_dir_path)
 
         if process.returncode == 0:
             logger.info("%s: Build Success" % commit_hash)

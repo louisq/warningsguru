@@ -1,12 +1,21 @@
 import fnmatch
 import os
-
 import re
+import time
+import subprocess
+
+import config
+
+maximum_number_of_processes = 48
+processes = []
+
+HOUSE_KEEPING_PATH = os.path.abspath("HouseKeeping.txt")
 
 
-def run(repo_path):
+def run(repo_path, adaptor_save_path):
 
     list_of_allowed_extensions = ['java']
+    adaptors_for_java = ["Findbugs", "Jlint"]
 
     # identified modified files
     modified_files = _identify_modified_files(repo_path)
@@ -18,11 +27,8 @@ def run(repo_path):
     compiled_files = _get_all_class_file(repo_path)
 
     modified_class_files = _identify_modified_class_files(filtered_modified_files, compiled_files)
-    pass
 
-    # identify the classes of these modified files
-
-    # run adaptors on these files
+    _run_adaptors_on_files(modified_class_files, repo_path, adaptors_for_java, adaptor_save_path)
 
 
 def _identify_modified_files(repo_path):
@@ -33,14 +39,13 @@ def _identify_modified_files(repo_path):
 
 
 def _filter_files(files, list_of_extensions):
-    return filter(lambda file: file[len(file)-4:].lower() in list_of_extensions, files)
+    return filter(lambda file_name: file_name[len(file_name) - 4:].lower() in list_of_extensions, files)
 
 
 FILE_PATTERN = re.compile("([\w\d_-]+)(?:\$[\w\$]*)*\.[\w\d]+")
 
 
 def _get_all_class_file(repo_path):
-    class_files = []
     files_map = {}
 
     for path, directory, files in os.walk(repo_path):
@@ -61,6 +66,7 @@ def _get_all_class_file(repo_path):
             files_map[name][relative_path].append(os.path.join(relative_path, class_file))
 
     return files_map
+
 
 def _identify_modified_class_files(modified_files, classes):
 
@@ -83,7 +89,29 @@ def _identify_modified_class_files(modified_files, classes):
     return modified_classes
 
 
+def _run_adaptors_on_files(class_files, repo_path, adaptors, adaptors_save_path):
 
-run("/home/lquerel/git/apache/tika")
+    for class_file in class_files:
+        _run_all_adaptors_on_file(class_file, repo_path, adaptors, adaptors_save_path)
 
 
+def _run_all_adaptors_on_file(class_file, repo_path, adaptors, adaptors_save_path):
+
+    for adaptor in adaptors:
+        adaptor_command = [config.TOIF_EXECUTABLE, "--adaptor", adaptor, "--housekeeping",
+                           HOUSE_KEEPING_PATH, "--outputdirectory", adaptors_save_path, "--inputfile", class_file]
+        print adaptor_command
+
+        _wait_for_process_slot()
+        p = subprocess.Popen(adaptor_command, shell=False, cwd=repo_path)
+        processes.append(p)
+
+
+def _wait_for_process_slot():
+    while len(processes) >= maximum_number_of_processes:
+        for process in processes:
+
+            if process.poll():
+                processes.remove(process)
+
+    time.sleep(0.5)
