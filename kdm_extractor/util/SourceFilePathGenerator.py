@@ -34,7 +34,7 @@ class OriginalFilePathGenerator:
     def transform(self, path):
 
         path = _remove_leading_slash(self._remove_root(path))
-        return self.mapping[path]
+        return "/%s" % self.mapping[path]
 
     """
     We need to have the path from the root of the analysed project and not the computer root
