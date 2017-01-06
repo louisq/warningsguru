@@ -42,17 +42,25 @@ def archive(repo_path, archive_path, repo_id, commit, filter_extensions=True):
         logger.error("Failed to save to archive %s" % archive_path)
         return False
 
-    archive_temp = os.path.join(archive_path, repo_id, "%s-temp" % commit)
-    archive_compress_file_no_ext = os.path.join(archive_path, repo_id, commit)
-    archive_compress_file = "%s.tar.gz" % archive_compress_file_no_ext
+    temp_archive = os.path.join(repo_path, "%s-temp" % commit)
+    temp_archive_compress_file_no_ext = os.path.join(temp_archive, commit)
+    temp_archive_compress_file = "%s.tar.gz" % temp_archive_compress_file_no_ext
 
-    _clear_archive(archive_temp, archive_compress_file)
+    archive_repo_path = os.path.join(archive_path, repo_id)
+    archive_compress_file = "%s.tar.gz" % os.path.join(archive_repo_path, commit)
+
+    _clear_archive(temp_archive, archive_compress_file)
     
     target_directories = _identify_target_directories(repo_path)
 
-    _clone_files_in_targets(repo_path, archive_temp, target_directories, filter_extensions=filter_extensions)
+    _clone_files_in_targets(repo_path, temp_archive, target_directories, filter_extensions=filter_extensions)
 
-    _compress_files(archive_temp, archive_compress_file_no_ext)
+    _compress_files(temp_archive, temp_archive_compress_file_no_ext)
+
+    _move_compress_file_to_archive(archive_repo_path, temp_archive_compress_file)
+
+    # Delete the temporary folder
+    _clear_archive_temp(temp_archive)
 
     return True
 
@@ -62,16 +70,16 @@ def _determine_access(archive_path):
 
 
 def _clear_archive(archive_temp, archive_compress_file):
-    
+
     _clear_archive_temp(archive_temp)
 
     if os.path.exists(archive_compress_file):
         os.remove(archive_compress_file)
-    
-    
-def _clear_archive_temp(archive_temp):
-    if os.path.exists(archive_temp):
-        shutil.rmtree(archive_temp)
+
+
+def _clear_archive_temp(temp_archive):
+    if os.path.exists(temp_archive):
+        shutil.rmtree(temp_archive)
         
         
 def _identify_target_directories(repo_path):
@@ -90,7 +98,7 @@ def _identify_target_directories(repo_path):
     return target_directories
 
 
-def _clone_files_in_targets(repo_path, archive_temp, target_directories, filter_extensions):
+def _clone_files_in_targets(repo_path, temp_archive, target_directories, filter_extensions):
 
     # Determine if we need to filter any of the files
     if filter_extensions:
@@ -100,13 +108,18 @@ def _clone_files_in_targets(repo_path, archive_temp, target_directories, filter_
 
     for path in target_directories:
         folder = path[len(repo_path):]
-        shutil.copytree(path, "%s/%s" % (archive_temp,  folder), ignore=ignore)
+        shutil.copytree(path, "%s/%s" % (temp_archive, folder), ignore=ignore)
 
 
-def _compress_files(archive_temp, archive_compress_file_no_ext):
+def _compress_files(archive_temp, temp_archive_compress_file_no_ext):
 
     # If the compression is changed the file extension needs to be changed as well in the parent method
-    shutil._make_tarball(archive_compress_file_no_ext, archive_temp, compress="gzip")
+    shutil._make_tarball(temp_archive_compress_file_no_ext, archive_temp, compress="gzip")
 
-    # Delete the temporary folder
-    _clear_archive_temp(archive_temp)
+
+def _move_compress_file_to_archive(repo_archive_path, temp_archive_compress_file):
+
+    if not os.path.exists(repo_archive_path):
+        os.makedirs(repo_archive_path)
+
+    shutil.move(temp_archive_compress_file, repo_archive_path)
