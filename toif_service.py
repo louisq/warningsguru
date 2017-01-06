@@ -18,24 +18,21 @@ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FO
 DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
-from maven_toif_runner.post_build_runner import run
+from static_analysis_runner.post_build_runner import run
 
 """
 The purpose of this script is to automatically run the TOIF adaptors on each commit that commitguru as analysed.
 """
 import subprocess
 import time
-from time import sleep
 
 from db_versioning import flyway_runner
-from pom_injector.pom_injector import pom_injector
 from kdm_extractor import extract
 from repos.repo_manager import load_repository
 from repos.git import GIT
 from utility.artifact_archiver import archive, artifact_archiver_version
 from utility.jdk_override import JdkOverride
 from utility.mvn_override import MvnOverride
-from utility.Logging import logger
 from utility.service_sql import *
 
 import config
@@ -43,7 +40,7 @@ from config import *
 
 BUILD = "BUILD"
 PROJECT_NAME = "StaticGuru"
-VERSION = "0.0.1"
+VERSION = "0.1.1"
 
 
 class AdaptorRunner:
@@ -61,12 +58,6 @@ class AdaptorRunner:
         # Load overrides
         self._jdk_override_loader()
         self._maven_override_loader()
-        # if "JDK_OVERRIDE" in dir(config) and isinstance(config.JDK_OVERRIDE, list):
-        #     self.jdk_override = JdkOverride(config.JDK_OVERRIDE)
-        #     logger.info("Loaded the following JDK overrides %s" % str(self.jdk_override.overrides))
-        # else:
-        #     self.jdk_override = JdkOverride([])
-        #     logger.warn("JDK_OVERRIDE is missing from config file")
 
         # Once everything as been validated we can start the service
         logger.info("Service prerequisites check complete. Starting %s" % PROJECT_NAME)
@@ -191,9 +182,9 @@ class AdaptorRunner:
 
         commit_hash = commit['commit']
         logger.info("%s: Checking out commit from %s" % (commit_hash, repo_dir))
-        process = subprocess.Popen("git reset --hard; git clean -df; git checkout %s" % commit_hash, shell=True,
-                                   cwd=repo_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        logger.info("%s: %s" % (commit_hash, "".join(map(str, process.communicate()))))
+        git_reset_process = subprocess.Popen("git reset --hard; git clean -df; git checkout %s" % commit_hash,
+                                             shell=True, cwd=repo_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        logger.info("%s: %s" % (commit_hash, "".join(map(str, git_reset_process.communicate()))))
 
         # Check if it's a maven project
         pom_file_path = os.path.join(repo_dir, "pom.xml")
@@ -203,34 +194,22 @@ class AdaptorRunner:
             logger.info("%s: Missing POM - Nothing to build" % commit_hash)
             return "MISSING POM", ""
 
-        # # Attempt to update the pom file
-        # logger.info("%s: Injecting staticguru in POM" % commit_hash)
-        # runner_base_dir_path = os.path.abspath(os.path.join(os.path.curdir, 'maven_toif_runner'))
-        # if not pom_injector(pom_file_path, runner_base_dir_path, repo_dir, adaptor_dir_path, commit_hash):
-        #     logger.error("%s: Failed to inject staticguru in POM" % commit_hash)
-        #     return "INJECTION FAILED", ""
-
-        # Ensure that the repository is clean
-        subprocess.Popen("mvn clean:clean", shell=True, cwd=repo_dir, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-
         # Determine if we need to override the jdk
         author_date = commit['author_date'].date()
         jdk_value = self.jdk_override.get_override(commit_hash, author_date)
         mvn_value = self.mvn_override.get_override(commit_hash, author_date)
 
-        logger.info("%s: Building and running TOIF adaptors" % commit_hash)
+        logger.info("%s: Building commit using MAVEN" % commit_hash)
         # run the commit build
-        process = subprocess.Popen("{jdk} MAVEN_OPTS=\"{maven_options}\" {mvn} -T 1C package -DskipTests exec:exec".format(jdk=jdk_value, maven_options=MAVEN_OPTS,  mvn=mvn_value),
-                                   shell=True, cwd=repo_dir, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        maven_logs = process.communicate()[0]
+        git_reset_process = subprocess.Popen("{jdk} MAVEN_OPTS=\"{maven_options}\" {mvn} -T 1C clean:clean package -DskipTests".format(jdk=jdk_value, maven_options=MAVEN_OPTS,  mvn=mvn_value),
+                                   shell=True, cwd=repo_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        maven_logs = git_reset_process.communicate()[0]
 
-        adaptor_dir_path = _get_adaptor_output_dir_path(repo_dir)
-        # Create directory where to save toif adaptor files
-        if not os.path.exists(adaptor_dir_path):
-            os.makedirs(adaptor_dir_path)
-        run(repo_dir, adaptor_dir_path)
+        # Run static analysis on the generated, modified class files
+        logger.info("%s: Running static analysis" % commit_hash)
+        _run_static_analysis(repo_dir, commit_hash)
 
-        if process.returncode == 0:
+        if git_reset_process.returncode == 0:
             logger.info("%s: Build Success" % commit_hash)
             return BUILD, maven_logs
         else:
@@ -247,6 +226,15 @@ def _get_kdm_file_output_path(repo_dir):
     return os.path.abspath(os.path.join(repo_dir, KDM_FILE))
 
 
+def _run_static_analysis(repo_dir, commit):
+    adaptor_dir_path = _get_adaptor_output_dir_path(repo_dir)
+
+    # Create directory where to save toif adaptor files
+    if not os.path.exists(adaptor_dir_path):
+        os.makedirs(adaptor_dir_path)
+    run(repo_dir, adaptor_dir_path, commit)
+
+
 def run_assimilator(repo_dir):
     adaptor_output_path = os.path.abspath(_get_adaptor_output_dir_path(repo_dir))
     assimilator_output_file_path = _get_kdm_file_output_path(repo_dir)
@@ -254,11 +242,11 @@ def run_assimilator(repo_dir):
     assimilator_process = subprocess.Popen("%s --merge --kdmfile=%s --inputfile=%s" %
                                            (TOIF_EXECUTABLE, assimilator_output_file_path, adaptor_output_path),
                                            shell=True, cwd=os.path.abspath(repo_dir), stdout=subprocess.PIPE,
-                                           stderr=subprocess.STDOUT)
+                                           stderr=subprocess.PIPE)
 
     # return the assimilator log results
-    sleep(20)
-    return assimilator_process.communicate()[0]
+    result = assimilator_process.communicate()[0]
+    return result
 
 
 def _extract_kdm_file(repo_dir):
@@ -270,7 +258,6 @@ def _extract_kdm_file(repo_dir):
                      shell=True, cwd=os.path.abspath(repo_dir), stdout=subprocess.PIPE,
                      stderr=subprocess.STDOUT)
     process.communicate()[0]
-    sleep(5)
 
 
 def _get_commit_parents(repo_dir, repo_id, all_commits=False):
