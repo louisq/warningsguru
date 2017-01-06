@@ -1,7 +1,7 @@
 """
 The MIT License (MIT)
 
-Copyright (c) 2016 Louis-Philippe Querel l_querel@encs.concordia.ca
+Copyright (c) 2016-2017 Louis-Philippe Querel l_querel@encs.concordia.ca
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software
 and associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -32,7 +32,7 @@ augmented commitguru as individual, toif view tsv compatible format.
 """
 
 
-def etl_warnings(kdm_file_path, project_root_directory, repo_id, commit_id):
+def etl_warnings(kdm_file_path, project_root_directory, repo_id, commit_id, file_mapping):
 
     # TODO determine if this component can be replaced by the new toif tsv component
 
@@ -43,7 +43,7 @@ def etl_warnings(kdm_file_path, project_root_directory, repo_id, commit_id):
 
     warnings = []
     path_generator = FilePathExtractor(toif_components)
-    reverse_engineer_path = OriginalFilePathGenerator(project_root_directory)
+    reverse_engineer_path = OriginalFilePathGenerator(project_root_directory, file_mapping)
 
     # Identify the files
     for component_id in toif_components:

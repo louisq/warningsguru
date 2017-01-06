@@ -33,7 +33,8 @@ processes = []
 
 HOUSE_KEEPING_PATH = os.path.join(os.path.abspath("./"), "static_analysis_runner", "Housekeeping.txt")
 
-# TODO add class to allow multiprocessing of this component for different commits
+# TODO make class to allow multiprocessing of this component for different commits
+
 
 def run(repo_path, adaptor_save_path, commit):
 
