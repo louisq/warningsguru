@@ -178,11 +178,13 @@ class StaticGuruService:
         mvn_command = "{jdk} MAVEN_OPTS=\"{maven_options}\" {mvn} -T 1C clean:clean package -DskipTests"\
             .format(jdk=jdk_value, maven_options=MAVEN_OPTS, mvn=mvn_value)
 
-        git_reset_process = subprocess.Popen(mvn_command, shell=True, cwd=repo_dir, stdout=subprocess.PIPE,
-                                             stderr=subprocess.PIPE)
-        maven_logs = git_reset_process.communicate()[0]
+        logger.debug("%s: Maven command '%s'" % (commit_hash, mvn_command))
 
-        if git_reset_process.returncode == 0:
+        mvn_process = subprocess.Popen(mvn_command, shell=True, cwd=repo_dir, stdout=subprocess.PIPE,
+                                       stderr=subprocess.PIPE)
+        maven_logs = mvn_process.communicate()[0]
+
+        if mvn_process.returncode == 0:
             logger.info("%s: Build Success" % commit_hash)
             return BUILD_SUCCESS, maven_logs
         else:
