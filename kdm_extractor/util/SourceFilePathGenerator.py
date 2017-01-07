@@ -34,6 +34,8 @@ class OriginalFilePathGenerator:
     def transform(self, path):
 
         path = _remove_leading_slash(self._remove_root(path))
+        if path not in self.mapping:
+            return None
         return "/%s" % self.mapping[path]
 
     """

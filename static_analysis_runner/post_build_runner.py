@@ -43,6 +43,7 @@ def run(repo_path, adaptor_save_path, commit):
 
     # identified modified files
     modified_files = _identify_modified_files(repo_path)
+    logger.info("%s: Modified files to identified in commit: %s" % (commit, str(modified_files)))
 
     # filter modified files to only have java files
 
@@ -108,12 +109,10 @@ def _identify_modified_class_files(modified_files, classes, commit):
         name = split_name[len(split_name)-1].split(".")[0]
 
         if name not in classes:
-            logger.error("%s: Class %s not in %s" % (commit, name, str(classes)))
+            logger.error("%s: Compiled class file not found for modified file %s" % (commit, modified_file))
             continue
 
         modified_class = classes.get(name)
-
-        file_modified_classes = []
 
         if len(modified_class) > 1:
             # if there is more then one class then it means that there are multiple files with the same name
