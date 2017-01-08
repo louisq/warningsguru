@@ -108,7 +108,7 @@ def _clone_files_in_targets(repo_path, temp_archive, target_directories, filter_
 
     for path in target_directories:
         folder = path[len(repo_path):]
-        shutil.copytree(path, "%s/%s" % (temp_archive, folder), ignore=ignore)
+        shutil.copytree(path, "%s/%s" % (temp_archive, folder), ignore=ignore, symlinks=True)
 
 
 def _compress_files(archive_temp, temp_archive_compress_file_no_ext):
