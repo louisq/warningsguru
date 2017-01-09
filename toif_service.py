@@ -175,7 +175,7 @@ class StaticGuruService:
 
         logger.info("%s: Building commit using MAVEN" % commit_hash)
         # run the commit build
-        mvn_command = "{jdk} MAVEN_OPTS=\"{maven_options}\" {mvn} -T 1C clean:clean package -DskipTests"\
+        mvn_command = "{jdk} MAVEN_OPTS=\"{maven_options}\" {mvn} clean package -DskipTests"\
             .format(jdk=jdk_value, maven_options=MAVEN_OPTS, mvn=mvn_value)
 
         logger.debug("%s: Maven command '%s'" % (commit_hash, mvn_command))
