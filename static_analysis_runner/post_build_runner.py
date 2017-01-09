@@ -28,7 +28,7 @@ import subprocess
 import config
 from utility.Logging import logger
 
-maximum_number_of_processes = 16
+maximum_number_of_processes = 4
 processes = []
 
 HOUSE_KEEPING_PATH = os.path.join(os.path.abspath("./"), "static_analysis_runner", "Housekeeping.txt")
