@@ -102,6 +102,8 @@ class StaticGuruService:
                     commit_hash = commit['commit']
 
                     service_db.processing_commit(repo_id, commit_hash)
+                    service_db.clear_commit_data(repo_id, commit_hash)
+
                     repo_dir = os.path.join(config.REPOSITORY_CACHE_PATH, repo_id)
 
                     if not load_repository(repo_id, repo_dir, commit_hash):

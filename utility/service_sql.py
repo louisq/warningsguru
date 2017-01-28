@@ -169,3 +169,10 @@ class Service_DB:
         VALUES
         (%(repo_id)s, %(commit_id)s, %(parent_commit)s)
         """, relations)
+
+    def clear_commit_data(self, repo, commit):
+        cursor = self.db.get_cursor()
+
+        cursor.execute("""DELETE FROM STATIC_COMMIT_LINE_WARNING WHERE REPO=%s AND COMMIT=%s;""", (repo, commit))
+        cursor.execute("""DELETE FROM STATIC_COMMIT_LINE_BLAME WHERE REPO=%s AND COMMIT=%s;""", (repo, commit))
+        cursor.execute("""DELETE FROM COMMIT_HISTORY_GRAPH WHERE REPO=%s AND COMMIT=%s;""", (repo, commit))
