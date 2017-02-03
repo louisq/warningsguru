@@ -81,10 +81,12 @@ class Service_DB:
             author_datetime = datetime.strptime(raw_author_date[:len(raw_author_date)-6], '%a %b %d %H:%M:%S %Y')
             commits.append({"repo": row[REPO], "commit": row[COMMIT], "author_date": author_datetime})
 
+        self.queued_commit(commits)
+
         return commits
 
     """
-    Delete any records of previous runs that have failed over an hour ago
+    Delete any records of previous runs that have not finished running since a specified interval
     """
     def truncate_commit_processing(self):
         cursor = self.db.get_cursor()

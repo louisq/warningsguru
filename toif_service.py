@@ -89,12 +89,10 @@ class StaticGuruService:
         service_db = Service_DB(REPROCESS_FAILURES_HOURS)
 
         while True:
+            service_db.truncate_commit_processing()
             commits = service_db.get_unprocessed_commits()
 
             if len(commits) > 0:
-
-                service_db.truncate_commit_processing()
-                service_db.queued_commit(commits)
 
                 # Checkout repo to commit
                 for commit in commits:
@@ -158,7 +156,7 @@ class StaticGuruService:
 
         commit_hash = commit['commit']
         logger.info("%s: Checking out commit from %s" % (commit_hash, repo_dir))
-        git_reset_process = subprocess.Popen("git reset --hard; git clean -df; git checkout %s" % commit_hash,
+        git_reset_process = subprocess.Popen("git reset --hard HEAD; git clean -df; git checkout %s" % commit_hash,
                                              shell=True, cwd=repo_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         logger.info("%s: %s" % (commit_hash, "".join(map(str, git_reset_process.communicate()))))
 
