@@ -1,7 +1,7 @@
 """
 The MIT License (MIT)
 
-Copyright (c) 2016 Louis-Philippe Querel l_querel@encs.concordia.ca
+Copyright (c) 2016-2017 Louis-Philippe Querel l_querel@encs.concordia.ca
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software
 and associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -93,8 +93,7 @@ class Service_DB:
         cursor.execute(
             """
             DELETE FROM STATIC_COMMIT_PROCESSED
-            WHERE STATUS <> 'PROCESSED' AND modified < NOW() - INTERVAL '360 minute';
-            --WHERE modified < NOW() - INTERVAL '%s HOUR';
+            WHERE STATUS <> 'PROCESSED' AND modified < NOW() - INTERVAL '%s hour';
             """ % self.REPROCESS_FAILURES_HOURS
         )
         self.db.db.commit()
