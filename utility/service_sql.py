@@ -177,3 +177,7 @@ class Service_DB:
         cursor.execute("""DELETE FROM STATIC_COMMIT_LINE_WARNING WHERE REPO=%s AND COMMIT=%s;""", (repo, commit))
         cursor.execute("""DELETE FROM STATIC_COMMIT_LINE_BLAME WHERE REPO=%s AND COMMIT=%s;""", (repo, commit))
         cursor.execute("""DELETE FROM COMMIT_HISTORY_GRAPH WHERE REPO=%s AND COMMIT=%s;""", (repo, commit))
+
+
+def get_service_db():
+    return Service_DB(config.REPROCESS_FAILURES_HOURS).db

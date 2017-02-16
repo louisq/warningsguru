@@ -155,10 +155,7 @@ class StaticGuruService:
     def checkout_and_build_commit(self, commit, repo_dir):
 
         commit_hash = commit['commit']
-        logger.info("%s: Checking out commit from %s" % (commit_hash, repo_dir))
-        git_reset_process = subprocess.Popen("git reset --hard HEAD; git clean -df; git checkout -f %s" % commit_hash,
-                                             shell=True, cwd=repo_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        logger.info("%s: %s" % (commit_hash, "".join(map(str, git_reset_process.communicate()))))
+        GIT.checkout(repo_dir, commit_hash)
 
         # Check if it's a maven project
         pom_file_path = os.path.join(repo_dir, "pom.xml")

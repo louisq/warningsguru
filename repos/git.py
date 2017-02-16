@@ -31,9 +31,11 @@ from utility.Logging import logger
 
 class GIT (VCS):
 
-    def checkout(self, repo_path, commit):
-        logger.info("%s: Checking out commit from %s" % (commit['commit'], repo_path))
-        subprocess.call("git reset --hard; git clean -df; git checkout %s" % commit['commit'], shell=True, cwd=repo_path)
+    def checkout(self, repo_path, commit_hash):
+        logger.info("%s: Checking out commit from %s" % (commit_hash, repo_path))
+        git_reset_process = subprocess.Popen("git reset --hard HEAD; git clean -df; git checkout -f %s" % commit_hash,
+                                             shell=True, cwd=repo_path, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        logger.info("%s: %s" % (commit_hash, "".join(map(str, git_reset_process.communicate()))))
 
     def get_current_commit_graph(self, repo_path):
         return _get_repo_dag(repo_path, only_current_commit=True)
@@ -64,9 +66,9 @@ class GIT (VCS):
     having a warning
     returns [{"origin_commit": "", 'origin_resource': "", 'origin_line': "", 'line': "", 'is_new_line': boolean}]
     """
-    def get_warning_blames(self, repo_full_path, file_path, warnings):
+    def get_warning_blames(self, repo_full_path, file_path, lines):
 
-        lines_with_blame = _get_file_blames(repo_full_path, file_path, warnings)
+        lines_with_blame = _get_file_blames(repo_full_path, file_path, lines)
 
         # todo determine how we would handle the move or copies of lines from one file to another
 
@@ -74,7 +76,7 @@ class GIT (VCS):
 
         for line in lines_with_blame:
             line['resource'] = file_path
-            if line['origin_commit'] == current_repo:
+            if line['origin_commit'].lstrip("^") in current_repo:
                 line["is_new_line"] = True
             else:
                 line["is_new_line"] = False
@@ -122,13 +124,12 @@ def _get_graph(hashes):
     return {"commit": hashes_list[0], "parents": None if len(hashes_list) == 0 else hashes_list[1:]}
 
 
-def _get_file_blames(git_root, file_path, warnings):
+def _get_file_blames(git_root, file_path, lines):
 
     # Sanitize the file path to remove leading slash
-    if len(file_path) > 0 and file_path[0] == '/':
-        file_path = file_path.lstrip('/')
+    file_path = _file_path_clean_util(file_path)
 
-    git_command = "git blame -lnswfMMMCCC %s %s" % (_generate_git_line_limit(warnings), file_path)
+    git_command = "git blame -lnswfMMMCCC %s %s" % (_generate_git_line_limit(lines), file_path)
 
     process = subprocess.Popen(git_command,
                                shell=True,
@@ -152,3 +153,92 @@ def _get_file_blames(git_root, file_path, warnings):
     commit_keys = ['origin_commit', 'origin_resource', 'origin_line', 'line']
 
     return [dict(zip(commit_keys, line))for line in lines]
+
+
+def _follow_file_history(git_root, file_path):
+    file_path = _file_path_clean_util(file_path)
+
+    git_command = 'git log --format="%H" --name-only -n 2 --follow {file}'.format(file=file_path)
+    # git_command = 'git log --format="%H" --name-only --follow {file}'.format(file=file_path)
+    process = subprocess.Popen(git_command,
+                               shell=True,
+                               cwd=os.path.abspath(git_root),
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.STDOUT)
+
+    # todo need to keep track of the file renames "--summary"
+    history = process.communicate()[0]
+    history = history.rstrip("\n").split("\n")
+
+    return (history[3], history[5]) if len(history) == 6 else (None, None)
+
+FOLLOW_HISTORY_PATTERN = re.compile(r'(\w+)\n\n([-\w_/.]+)')
+
+
+def file_history(git_root, file_path):
+    file_path = _file_path_clean_util(file_path)
+
+    git_command = 'git log --format="%H" --name-only --follow {file}'.format(file=file_path)
+    process = subprocess.Popen(git_command,
+                               shell=True,
+                               cwd=os.path.abspath(git_root),
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.STDOUT)
+
+    return FOLLOW_HISTORY_PATTERN.findall(process.communicate()[0])
+
+
+def _get_file_line_diff(git_root, compare_commit, current_file, compare_file):
+    current_file = _file_path_clean_util(current_file)
+    compare_file = _file_path_clean_util(compare_file)
+
+    git_command = 'git diff -U0 HEAD {commit}  {head_file} {commit_file}'\
+        .format(commit=compare_commit, head_file=current_file, commit_file=compare_file)
+    process = subprocess.Popen(git_command,
+                               shell=True,
+                               cwd=os.path.abspath(git_root),
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.STDOUT)
+
+    # todo need to keep track of the file renames "--summary"
+    history = process.communicate()[0]
+
+    pattern = re.compile("@@ ([+-]\d+(?:,\d+)?) ([+-]\d+(?:,\d+)?) @@")
+    diffs = pattern.findall(history)
+
+    line = {}
+
+    for diff in diffs:
+
+        current = diff[0].split(",")
+        current_value = int(current[0])
+
+        previous = diff[1].split(",")
+        previous_value = int(previous[0])
+
+        line[abs(current_value)] = current_value + previous_value
+
+    return line
+
+
+def _commit_modified_files(git_root, commit):
+
+    git_command = 'git diff-tree --no-commit-id --name-only -r {commit}'.format(commit=commit)
+    process = subprocess.Popen(git_command,
+                               shell=True,
+                               cwd=os.path.abspath(git_root),
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.STDOUT)
+
+    history = process.communicate()[0].split("\n")
+
+    return [] if history[0] == "" else history[:len(history)-1]
+
+
+def _file_path_clean_util(file_path):
+    if len(file_path) > 0 and file_path[0] == '/':
+        file_path = file_path.lstrip('/')
+    return file_path
+
+
+
