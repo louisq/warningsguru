@@ -13,6 +13,7 @@ find all hashes which match
 import hashlib
 import os
 
+import time
 from psycopg2._psycopg import IntegrityError
 
 from repos.git import GIT, _get_file_blames
@@ -28,6 +29,7 @@ def commit_warning_tracing():
 
         if not commit:
             print "no commits to analyse"
+            time.sleep(15*60)
         else:
             repo_id = commit[0]
             repo_path = get_repo_path(repo_id)
@@ -119,7 +121,7 @@ def get_commits_with_no_warning_tracing(db):
             FROM static_commit_processed
             WHERE warnings_analysis_processed is NULL
             and (warnings_analysis_processing is null or warnings_analysis_processing < NOW() - INTERVAL '2 hour')
-            AND repo = '42e73e16-e20a-4b17-99a3-4dd7b35a6155'
+            AND repo = 'b811c1aa-4065-44a6-a69c-c76ed821392c'
             LIMIT 1;
             """
     cursor.execute(query)
