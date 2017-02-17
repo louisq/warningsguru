@@ -17,6 +17,7 @@ import time
 from psycopg2._psycopg import IntegrityError
 
 from repos.git import GIT, _get_file_blames
+from repos.repo_manager import load_repository
 from utility.file_system import get_repo_path
 from utility.service_sql import get_service_db
 
@@ -58,6 +59,7 @@ def commit_warning_tracing():
 
             double_check_count = 0
 
+            load_repository(repo_id, repo_path, commit_hash)
             GIT().checkout(repo_path, commit_hash)
 
             confirmed_recovered_warnings = []

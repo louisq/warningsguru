@@ -3,6 +3,7 @@ import uuid
 
 from repos import git
 from repos.git import GIT, _commit_modified_files, _follow_file_history
+from repos.repo_manager import load_repository
 from utility.file_system import get_repo_path
 from utility.service_sql import get_service_db
 
@@ -21,6 +22,8 @@ def get_commit_file_history():
             repo_id = commit[0]
             repo_path = get_repo_path(repo_id)
             commit_hash = commit[1]
+
+            load_repository(repo_id, repo_path, commit_hash)
 
             # get list of files which have previously been analysed
             existing_files = _get_modified_files_with_history(service_db, repo_id, commit_hash)
@@ -107,7 +110,7 @@ def _get_commits_with_no_file_history(db):
             FROM static_commit_processed as p, commits as c
             WHERE file_history_processed is NULL
             and p.repo = c.repository_id and p.commit = c.commit_hash
-            AND repo = '42e73e16-e20a-4b17-99a3-4dd7b35a6155'
+            AND repo = '55a40844-8e8a-4910-9e2a-47b2caf478dc'
             ORDER by author_date_unix_timestamp desc
             LIMIT 1;
             """
