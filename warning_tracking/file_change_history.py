@@ -83,6 +83,7 @@ def get_commit_file_history():
                                 {
                                     "repo": repo_id,
                                     "commit": file_commit,
+                                    "alt_commit": "^%s" % file_commit[:39],
                                     "file_path": file_commit_path,
                                     "parent_commit": parent_file_commit,
                                     "parent_file_path": parent_file_commit_path,
@@ -106,7 +107,7 @@ def _get_commits_with_no_file_history(db):
             FROM static_commit_processed as p, commits as c
             WHERE file_history_processed is NULL
             and p.repo = c.repository_id and p.commit = c.commit_hash
-            --AND repo = '42e73e16-e20a-4b17-99a3-4dd7b35a6155'
+            AND repo = '42e73e16-e20a-4b17-99a3-4dd7b35a6155'
             ORDER by author_date_unix_timestamp desc
             LIMIT 1;
             """

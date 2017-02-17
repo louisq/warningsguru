@@ -172,20 +172,23 @@ def _follow_file_history(git_root, file_path):
 
     return (history[3], history[5]) if len(history) == 6 else (None, None)
 
-FOLLOW_HISTORY_PATTERN = re.compile(r'(\w+)\n\n([-\w_/.]+)')
+FOLLOW_HISTORY_PATTERN = re.compile(r'(\w+)\n\n(.+)')
+#FOLLOW_HISTORY_PATTERN = re.compile(r'(\w+)\n\n([-\w_/. +]+)')
 
 
 def file_history(git_root, file_path):
     file_path = _file_path_clean_util(file_path)
 
-    git_command = 'git log --format="%H" --name-only --follow {file}'.format(file=file_path)
+    git_command = 'git log --format="%H" --name-only --follow \'{file}\''.format(file=file_path)
     process = subprocess.Popen(git_command,
                                shell=True,
                                cwd=os.path.abspath(git_root),
                                stdout=subprocess.PIPE,
                                stderr=subprocess.STDOUT)
+    git_result = process.communicate()[0]
 
-    return FOLLOW_HISTORY_PATTERN.findall(process.communicate()[0])
+    history = FOLLOW_HISTORY_PATTERN.findall(git_result)
+    return history
 
 
 def _get_file_line_diff(git_root, compare_commit, current_file, compare_file):

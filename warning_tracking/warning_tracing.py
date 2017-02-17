@@ -13,6 +13,8 @@ find all hashes which match
 import hashlib
 import os
 
+from psycopg2._psycopg import IntegrityError
+
 from repos.git import GIT, _get_file_blames
 from utility.file_system import get_repo_path
 from utility.service_sql import get_service_db
@@ -31,6 +33,7 @@ def commit_warning_tracing():
             repo_path = get_repo_path(repo_id)
             commit_hash = commit[1]
             processing_commit(service_db, repo_id, commit_hash)
+            delete_previously_recovered_commit_warnings(service_db, repo_id, commit_hash)
 
             modified_files = get_modified_files(service_db, repo_id, commit_hash)
 
@@ -99,8 +102,13 @@ def commit_warning_tracing():
             print "Recovered %s warnings where sg found %s. %s of these were in recovered" % (len(confirmed_recovered_warnings), identified_warnings_count, double_check_count)
             # get the blames for the files which have warnings
 
-            add_recovered_warnings(service_db, confirmed_recovered_warnings)
-            processed_commit(service_db, repo_id, commit_hash)
+            try:
+                add_recovered_warnings(service_db, confirmed_recovered_warnings)
+                processed_commit(service_db, repo_id, commit_hash)
+            except IntegrityError as e:
+                print "conflict arose. Continuing"
+                service_db = get_service_db()
+                continue
             print ""
 
 
@@ -254,6 +262,15 @@ def processing_commit(db, repo, commit):
                  WHERE REPO = %s AND COMMIT = %s;
                 """, (repo, commit))
     db.db.commit()
+
+
+def delete_previously_recovered_commit_warnings(db, repo, commit):
+    cursor = db.get_cursor()
+
+    cursor.execute("""
+                    DELETE FROM STATIC_COMMIT_WARNINGS_PROCESSED
+                     WHERE REPO = %s AND COMMIT = %s;
+                    """, (repo, commit))
 
 
 def add_recovered_warnings(db, recovered_warnings):
