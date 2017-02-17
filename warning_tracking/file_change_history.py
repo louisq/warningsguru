@@ -165,9 +165,9 @@ def add_file_history(db, file_history):
     cursor = db.get_cursor()
     cursor.executemany("""
     INSERT INTO static_commit_file_history
-    (REPO, COMMIT, file_path, parent_commit, parent_file_path, file_id)
+    (REPO, COMMIT, ALT_COMMIT, file_path, parent_commit, parent_file_path, file_id)
     VALUES
-    (%(repo)s, %(commit)s, %(file_path)s, %(parent_commit)s, %(parent_file_path)s, %(file_id)s)
+    (%(repo)s, %(commit)s, %(alt_commit)s, %(file_path)s, %(parent_commit)s, %(parent_file_path)s, %(file_id)s)
     """, file_history)
 
 def processed_commit(db, repo, commit):
