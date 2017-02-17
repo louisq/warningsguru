@@ -1,4 +1,5 @@
 
+ALTER TABLE static_commit_processed ADD COLUMN warnings_analysis_processing TIMESTAMP DEFAULT null;
 ALTER TABLE static_commit_processed ADD COLUMN warnings_analysis_processed TIMESTAMP DEFAULT null;
 
 CREATE TABLE IF NOT EXISTS static_commit_warnings_processed (
@@ -17,4 +18,4 @@ CREATE TABLE IF NOT EXISTS static_commit_warnings_processed (
   NEW_WARNING BOOLEAN not null,
   RECOVERED_WARNING BOOLEAN not null,
   CREATED timestamp DEFAULT NOW(),
-PRIMARY KEY (REPO, COMMIT, LINE, WEAKNESS));
+PRIMARY KEY (REPO, COMMIT, FILE_PATH, LINE, WEAKNESS));

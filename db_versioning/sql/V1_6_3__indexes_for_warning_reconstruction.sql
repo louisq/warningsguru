@@ -14,3 +14,9 @@ UPDATE static_commit_file_history
 SET alt_commit = concat('^', substring(commit from 1 for 39));
 
 CREATE INDEX static_commit_file_history_id_commit_alt_file_idx ON static_commit_file_history(file_id, repo, alt_commit, file_path);
+
+--UPDATE static_commit_line_warning SET resource = trim( both ' ' from resource);
+--UPDATE static_commit_line_blame SET origin_resource = trim( both ' ' from origin_resource);
+--UPDATE static_commit_line_blame SET resource = trim( both ' ' from resource);
+
+
