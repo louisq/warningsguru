@@ -38,8 +38,8 @@ def get_commit_file_history(service_db, repo_id, repo_path, commit_hash, batch_r
     files_to_analyse = filter(lambda commit_file: commit_file not in existing_files,
                               get_commit_modified_files(repo_path, commit_hash))
 
-    commit_file_history = []
-    commit_file_keys_check = {}
+    commit_files_history = []
+    commit_files_keys = {}
 
     if len(files_to_analyse) > 0:
 
@@ -69,9 +69,9 @@ def get_commit_file_history(service_db, repo_id, repo_path, commit_hash, batch_r
                 file_id = previous_file_id
                 ignore_commit_files = _get_commit_file_by_file_id(service_db, repo_id, file_id)
 
-            elif "%s%s%s" % (original_file[0], original_file[1], None) in commit_file_keys_check.keys():
+            elif "%s%s%s" % (original_file[0], original_file[1], None) in commit_files_keys.keys():
                 # check if the file was analysed as part of the commit which we are presently analysing
-                file_id = commit_file_keys_check["%s%s%s" % (original_file[0], original_file[1], None)]
+                file_id = commit_files_keys["%s%s%s" % (original_file[0], original_file[1], None)]
 
             else:
                 # if the file was never analysed we give it a new file id
@@ -90,10 +90,10 @@ def get_commit_file_history(service_db, repo_id, repo_path, commit_hash, batch_r
                     parent_file_commit_path = commit_file_history[index+1][1]
 
                 commit_file_key = "%s%s%s" % (file_commit, file_commit_path, parent_file_commit)
-                if commit_file_key not in ignore_commit_files and commit_file_key not in commit_file_keys_check.keys():
+                if commit_file_key not in ignore_commit_files and commit_file_key not in commit_files_keys.keys():
 
-                    commit_file_keys_check[commit_file_key] = file_id
-                    commit_file_history.append(
+                    commit_files_keys[commit_file_key] = file_id
+                    commit_files_history.append(
                         {
                             "repo": repo_id,
                             "commit": file_commit,
@@ -105,8 +105,8 @@ def get_commit_file_history(service_db, repo_id, repo_path, commit_hash, batch_r
                         }
                     )
 
-    if len(commit_file_history) > 0:
-        add_file_history(service_db, commit_file_history)
+    if len(commit_files_history) > 0:
+        add_file_history(service_db, commit_files_history)
 
     processed_commit(service_db, repo_id, commit_hash, batch_run)
 
