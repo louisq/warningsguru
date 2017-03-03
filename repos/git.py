@@ -179,7 +179,7 @@ FOLLOW_HISTORY_PATTERN = re.compile(r'(\w+)\n\n(.+)')
 def file_history(git_root, file_path):
     file_path = _file_path_clean_util(file_path)
 
-    git_command = 'git log --format="%H" --name-only --follow \'{file}\''.format(file=file_path)
+    git_command = 'git log --format="%H" --name-only --follow "{file}"'.format(file=file_path)
     process = subprocess.Popen(git_command,
                                shell=True,
                                cwd=os.path.abspath(git_root),
@@ -224,7 +224,7 @@ def _get_file_line_diff(git_root, compare_commit, current_file, compare_file):
     return line
 
 
-def _commit_modified_files(git_root, commit):
+def get_commit_modified_files(git_root, commit):
 
     git_command = 'git diff-tree --no-commit-id --name-only -r {commit}'.format(commit=commit)
     process = subprocess.Popen(git_command,

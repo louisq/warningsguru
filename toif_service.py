@@ -33,6 +33,7 @@ from utility.service_sql import *
 
 import config
 from config import *
+from warning_tracking.file_change_history import get_commit_file_history
 
 """
 The purpose of this script is to automatically run the TOIF adaptors on each commit that commitguru as analysed.
@@ -96,66 +97,78 @@ class StaticGuruService:
 
                 # Checkout repo to commit
                 for commit in commits:
-                    repo_id = commit['repo']
-                    commit_hash = commit['commit']
+                    self._process_commit(service_db, commit)
 
-                    service_db.processing_commit(repo_id, commit_hash)
-                    service_db.clear_commit_data(repo_id, commit_hash)
-
-                    repo_dir = os.path.join(config.REPOSITORY_CACHE_PATH, repo_id)
-
-                    if not load_repository(repo_id, repo_dir, commit_hash):
-                        # Failed to load the repo or the commit
-                        commit_result = "COMMIT_MISSING"
-                        log = "repo or commit not loaded"
-                    else:
-
-                        commit_result, log = self.checkout_and_build_commit(commit, repo_dir)
-
-                        # We run static analysis even if the build as failed as a project is usually composed of sub
-                        # projects and we might be able to recover some of the warnings
-                        if commit_result in [BUILD_SUCCESS, BUILD_FAILED]:
-
-                            # Run static analysis on the generated, modified class files
-                            logger.info("%s: Running static analysis" % commit_hash)
-                            class_file_mapping = _run_static_analysis(repo_dir, commit_hash)
-
-                            if len(class_file_mapping) > 0:
-                                logger.info("%s: Running TOIF file warnings assimilator" % commit_hash)
-                                # Build was successful so we can continue
-                                log = "\n".join((log, run_assimilator(repo_dir)))
-
-                                logger.info("%s: Attempting to extract file warnings from assimilator" % commit_hash)
-                                _manage_assimilator_result(repo_dir, commit, service_db, class_file_mapping)
-
-                            else:
-                                logger.info("%s: No TOIF file warnings to assimilate" % commit_hash)
-
-                        if ARTIFACT_ARCHIVER:
-                            if ARTIFACT_ARCHIVER_PATH:
-                                logger.info("%s: Running archiving on build artifacts as enabled" % commit_hash)
-                                archiving_result = archive(repo_dir, ARTIFACT_ARCHIVER_PATH, repo_id, commit_hash)
-                                if archiving_result:
-                                    service_db.commit_log_tool(repo_id, commit_hash, 'artifacts_archived', artifact_archiver_version)
-                                    logger.info("%s: Finished archiving of build artifacts" % commit_hash)
-                            else:
-                                logger.warn("Build artifact archiving cannot be enabled if the archiving path is not specified")
-
-                    # Get the commit parent history
-                    logger.info("%s: Saving the commit parents" % commit_hash)
-                    parent_commit_history = _get_commit_parents(repo_dir, repo_id)
-                    service_db.add_commit_history_graph(parent_commit_history)
-
-                    service_db.processed_commit(commit['repo'], commit['commit'], commit_result, log=log)
+            # todo run the warnings recovery after we have obtained the commits
 
             else:
                 logger.info("No new tasks to run. Going to sleep for %s minutes" % BACKGROUND_SLEEP_MINUTES)
                 time.sleep(BACKGROUND_SLEEP_MINUTES*60)
 
+    def _process_commit(self, service_db, commit):
+        repo_id = commit['repo']
+        commit_hash = commit['commit']
+
+        # Update db to reflect that we are processing the commit
+        service_db.processing_commit(repo_id, commit_hash)
+
+        # Clear out any previous runs of the commit
+        service_db.clear_commit_data(repo_id, commit_hash)
+
+        repo_dir = os.path.join(config.REPOSITORY_CACHE_PATH, repo_id)
+
+        if not load_repository(repo_id, repo_dir, commit_hash):
+            # Failed to load the repo or the commit
+            commit_result = "COMMIT_MISSING"
+            log = "repo or commit not loaded"
+        else:
+
+            commit_result, log = self.checkout_and_build_commit(commit, repo_dir)
+
+            # We run static analysis even if the build as failed as a project is usually composed of sub
+            # projects and we might be able to recover some of the warnings
+            if commit_result in [BUILD_SUCCESS, BUILD_FAILED]:
+
+                # Run static analysis on the generated, modified class files
+                logger.info("%s: Running static analysis" % commit_hash)
+                class_file_mapping = _run_static_analysis(repo_dir, commit_hash)
+
+                if len(class_file_mapping) > 0:
+                    logger.info("%s: Running TOIF file warnings assimilator" % commit_hash)
+                    # Build was successful so we can continue
+                    log = "\n".join((log, run_assimilator(repo_dir)))
+
+                    logger.info("%s: Attempting to extract file warnings from assimilator" % commit_hash)
+                    _manage_assimilator_result(repo_dir, commit, service_db, class_file_mapping)
+
+                else:
+                    logger.info("%s: No TOIF file warnings to assimilate" % commit_hash)
+
+            if ARTIFACT_ARCHIVER:
+                if ARTIFACT_ARCHIVER_PATH:
+                    logger.info("%s: Running archiving on build artifacts as enabled" % commit_hash)
+                    archiving_result = archive(repo_dir, ARTIFACT_ARCHIVER_PATH, repo_id, commit_hash)
+                    if archiving_result:
+                        service_db.commit_log_tool(repo_id, commit_hash, 'artifacts_archived', artifact_archiver_version)
+                        logger.info("%s: Finished archiving of build artifacts" % commit_hash)
+                else:
+                    logger.warn("Build artifact archiving cannot be enabled if the archiving path is not specified")
+
+        # Get the commit parent history
+        logger.info("%s: Saving the commit parents" % commit_hash)
+        parent_commit_history = _get_commit_parents(repo_dir, repo_id)
+        service_db.add_commit_history_graph(parent_commit_history)
+
+        # Getting the file history and adding it to the db
+        logger.info("%s: Obtaining file history" % commit_hash)
+        get_commit_file_history(service_db, repo_id, repo_dir, commit_hash)
+
+        service_db.processed_commit(repo_id, commit_hash, commit_result, log=log)
+
     def checkout_and_build_commit(self, commit, repo_dir):
 
         commit_hash = commit['commit']
-        GIT.checkout(repo_dir, commit_hash)
+        GIT().checkout(repo_dir, commit_hash)
 
         # Check if it's a maven project
         pom_file_path = os.path.join(repo_dir, "pom.xml")
