@@ -18,10 +18,8 @@ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FO
 DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
-
-import os
-from config import REPOSITORY_CACHE_PATH
+from utility.file_system import get_repo_path
 
 
-def get_repo_path(repo):
-    return os.path.join(REPOSITORY_CACHE_PATH, repo)
+def commit_params(commit):
+    return commit['repo'], commit['commit'], get_repo_path(commit['repo'])

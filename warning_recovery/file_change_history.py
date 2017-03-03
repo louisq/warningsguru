@@ -1,10 +1,31 @@
+"""
+The MIT License (MIT)
+
+Copyright (c) 2017 Louis-Philippe Querel l_querel@encs.concordia.ca
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software
+and associated documentation files (the "Software"), to deal in the Software without restriction,
+including without limitation the rights to use, copy, modify, merge, publish, distribute,
+sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or
+substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
+BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+"""
+
 import os
 import uuid
 
 from repos import git
 from repos.git import GIT, get_commit_modified_files
 from repos.repo_manager import load_repository
-from utility.file_system import get_repo_path
+from utility.commit import commit_params
 from utility.service_sql import get_service_db
 
 
@@ -95,9 +116,9 @@ def _get_commits_with_no_file_history(db):
     query = """
             SELECT repo, commit
             FROM static_commit_processed as p, commits as c
-            WHERE file_history_processed is NULL
+            WHERE STATUS = 'PROCESSED'
+            and file_history_processed is NULL
             and p.repo = c.repository_id and p.commit = c.commit_hash
-            AND repo = '55a40844-8e8a-4910-9e2a-47b2caf478dc'
             ORDER by author_date_unix_timestamp desc
             LIMIT 1;
             """
@@ -186,10 +207,7 @@ if __name__ == "__main__":
             print "no more commits to analyse"
             break
         else:
-
-            repo_id = commit[0]
-            repo_path = get_repo_path(repo_id)
-            commit_hash = commit[1]
+            repo_id, commit_hash, repo_path = commit_params(commit)
 
             load_repository(repo_id, repo_path, commit_hash)
 

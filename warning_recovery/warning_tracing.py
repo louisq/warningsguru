@@ -1,41 +1,42 @@
 """
-Once we have analysed every single commit we will need to got through each commit
+The MIT License (MIT)
 
-Get the list of all unique warnings which have been identified for the following file
+Copyright (c) 2017 Louis-Philippe Querel l_querel@encs.concordia.ca
 
-Eliminate all warnings which originate after the commit was done
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software
+and associated documentation files (the "Software"), to deal in the Software without restriction,
+including without limitation the rights to use, copy, modify, merge, publish, distribute,
+sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-Obtain git blame
+The above copyright notice and this permission notice shall be included in all copies or
+substantial portions of the Software.
 
-find all hashes which match
-
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
+BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
+
 import hashlib
 import os
 
 import time
 from psycopg2._psycopg import IntegrityError
 
-from repos.git import GIT, _get_file_blames
+from repos.git import GIT, get_file_blames
 from repos.repo_manager import load_repository
-from utility.file_system import get_repo_path
+from utility.Logging import logger
+from utility.commit import commit_params
 from utility.service_sql import get_service_db
 
 
-def commit_warning_tracing():
-    service_db = get_service_db()
+def commit_warning_recovery(service_db, repo_id, commit_hash, repo_path):
 
-    while True:
-        commit = get_commits_with_no_warning_tracing(service_db)
-
-        if not commit:
-            print "no commits to analyse"
-            time.sleep(15*60)
-        else:
-            repo_id = commit[0]
-            repo_path = get_repo_path(repo_id)
-            commit_hash = commit[1]
             processing_commit(service_db, repo_id, commit_hash)
+
+            # delete artifacts from previous runs of warning recovery on the commit
             delete_previously_recovered_commit_warnings(service_db, repo_id, commit_hash)
 
             modified_files = get_modified_files(service_db, repo_id, commit_hash)
@@ -44,7 +45,7 @@ def commit_warning_tracing():
 
             if len(modified_files.keys()) == 0:
                 print "no modified files in commit %s" % commit_hash
-                continue
+                return
 
             # get the warnings for the current commit
             identified_warnings = get_commit_identified_warnings(service_db, repo_id, commit_hash)
@@ -59,6 +60,7 @@ def commit_warning_tracing():
 
             double_check_count = 0
 
+            # checkout the commit in the repository
             load_repository(repo_id, repo_path, commit_hash)
             GIT().checkout(repo_path, commit_hash)
 
@@ -70,17 +72,23 @@ def commit_warning_tracing():
                 if not os.path.exists(os.path.join(repo_path, file_path)):
                     continue
 
+                # Get the possible warnings that might be contained in the modified file
                 file_id = modified_files[file_path]
                 possible_file_warnings = recovered_warnings[file_id]
 
+                # For the commit get the information about the origin of every single line
                 file_origin = get_file_origin_keys(repo_path, file_path)
                 file_origin_keys = file_origin.keys()
 
+                # Determine which lines of the modified file might have warnings based on historical commits
                 found_warnings = filter(lambda warning_key: warning_key in file_origin_keys, possible_file_warnings.keys())
 
                 if len(found_warnings) > 0:
                     for origin_line in found_warnings:
                         warning_lines += 1
+
+                        # For each identified line which would have a warning, iterate through all the warnings which might
+                        # be on that line
                         for line_warning in possible_file_warnings[origin_line]:
                             warning_obj = possible_file_warnings[origin_line][line_warning]
 
@@ -101,19 +109,17 @@ def commit_warning_tracing():
                                  "new_warning": new_warning, "recovered_warning": recovered_warning}
                             )
 
-            print "Finished analysing commit"
-
-            print "Recovered %s warnings where sg found %s. %s of these were in recovered" % (len(confirmed_recovered_warnings), identified_warnings_count, double_check_count)
-            # get the blames for the files which have warnings
+            logger("%s: Finished warnings recovery on commit. Recovered %s warnings where sg found %s. "
+                   "%s of these were in recovered" %
+                   (commit_hash, len(confirmed_recovered_warnings), identified_warnings_count, double_check_count))
 
             try:
                 add_recovered_warnings(service_db, confirmed_recovered_warnings)
                 processed_commit(service_db, repo_id, commit_hash)
             except IntegrityError as e:
-                print "conflict arose. Continuing"
+                logger.error("%s: Conflict arose when saving warnigns to db.\nMessage: %s" % (commit_hash, e.message))
                 service_db = get_service_db()
-                continue
-            print ""
+                return
 
 
 def get_commits_with_no_warning_tracing(db):
@@ -121,9 +127,9 @@ def get_commits_with_no_warning_tracing(db):
     query = """
             SELECT repo, commit
             FROM static_commit_processed
-            WHERE warnings_analysis_processed is NULL
+            WHERE STATUS = 'PROCESSED'
+            and warnings_analysis_processed is NULL
             and (warnings_analysis_processing is null or warnings_analysis_processing < NOW() - INTERVAL '2 hour')
-            AND repo = 'b811c1aa-4065-44a6-a69c-c76ed821392c'
             LIMIT 1;
             """
     cursor.execute(query)
@@ -179,7 +185,7 @@ def get_commit_identified_warnings(db, repo, commit):
 def get_file_origin_keys(repo_path, file_path):
     result = {}
 
-    for line in _get_file_blames(repo_path, file_path, []):
+    for line in get_file_blames(repo_path, file_path, []):
         result[hashlib.sha224(
             "%s%s%s" % (line["origin_commit"].strip(), line["origin_resource"].strip(), line["origin_line"])).hexdigest()] = line[
             "line"]
@@ -203,7 +209,6 @@ def recover_warnings(db, repo, commit):
             join static_commit_line_blame as b on (h.repo, h.alt_commit, h.file_path) = (b.repo, b.origin_commit, b.origin_resource)
             join static_commit_line_warning as w on (b.repo, b.commit, b.resource, b.line) = (w.repo, w.commit, w.resource, w.line)
             where h.file_id in (SELECT file_id from static_commit_file_history where repo =  %s and commit = %s group by file_id);
-
             """
     cursor.execute(query, (repo, commit, repo, commit))
 
@@ -298,4 +303,16 @@ def processed_commit(db, repo, commit):
     db.db.commit()
 
 
-commit_warning_tracing()
+# Run this file directly to perform the warnings recovery as a batch on any commits which have not been recovered yet
+if __name__ == "__main__":
+    service_db = get_service_db()
+
+    while True:
+        commit = get_commits_with_no_warning_tracing(service_db)
+
+        if not commit:
+            print "no commits to analyse"
+            time.sleep(15*60)
+        else:
+            repo_id, commit_hash, repo_path = commit_params(commit)
+            commit_warning_recovery(service_db, repo_id, commit_hash, repo_path)

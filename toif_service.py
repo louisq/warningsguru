@@ -27,13 +27,16 @@ from kdm_extractor import extract
 from repos.repo_manager import load_repository
 from repos.git import GIT
 from utility.artifact_archiver import archive, artifact_archiver_version
+from utility.commit import commit_params
 from utility.jdk_override import JdkOverride
 from utility.mvn_override import MvnOverride
 from utility.service_sql import *
 
 import config
 from config import *
-from warning_tracking.file_change_history import get_commit_file_history
+from warning_recovery.file_change_history import get_commit_file_history
+
+from warning_recovery.warning_tracing import commit_warning_recovery
 
 """
 The purpose of this script is to automatically run the TOIF adaptors on each commit that commitguru as analysed.
@@ -97,17 +100,21 @@ class StaticGuruService:
 
                 # Checkout repo to commit
                 for commit in commits:
-                    self._process_commit(service_db, commit)
+                    repo_id, commit_hash, repo_path = commit_params(commit)
+                    author_date = commit['author_date'].date()
 
-            # todo run the warnings recovery after we have obtained the commits
+                    self._process_commit(service_db, repo_id, commit_hash, repo_path, author_date)
+
+                # Once all the commits in the batch have been ran we need to obtain the warnings recovery
+                for commit in commits:
+                    repo_id, commit_hash, repo_path = commit_params(commit)
+                    commit_warning_recovery(service_db.db, repo_id, commit_hash, repo_path)
 
             else:
                 logger.info("No new tasks to run. Going to sleep for %s minutes" % BACKGROUND_SLEEP_MINUTES)
                 time.sleep(BACKGROUND_SLEEP_MINUTES*60)
 
-    def _process_commit(self, service_db, commit):
-        repo_id = commit['repo']
-        commit_hash = commit['commit']
+    def _process_commit(self, service_db, repo_id, commit_hash, repo_path, author_date):
 
         # Update db to reflect that we are processing the commit
         service_db.processing_commit(repo_id, commit_hash)
@@ -115,15 +122,14 @@ class StaticGuruService:
         # Clear out any previous runs of the commit
         service_db.clear_commit_data(repo_id, commit_hash)
 
-        repo_dir = os.path.join(config.REPOSITORY_CACHE_PATH, repo_id)
-
-        if not load_repository(repo_id, repo_dir, commit_hash):
+        # load the repository if it does not exist or if it is not up to date with the commit to analyse
+        if not load_repository(repo_id, repo_path, commit_hash):
             # Failed to load the repo or the commit
             commit_result = "COMMIT_MISSING"
             log = "repo or commit not loaded"
         else:
 
-            commit_result, log = self.checkout_and_build_commit(commit, repo_dir)
+            commit_result, log = self.checkout_and_build_commit(commit_hash, repo_path, author_date)
 
             # We run static analysis even if the build as failed as a project is usually composed of sub
             # projects and we might be able to recover some of the warnings
@@ -131,15 +137,15 @@ class StaticGuruService:
 
                 # Run static analysis on the generated, modified class files
                 logger.info("%s: Running static analysis" % commit_hash)
-                class_file_mapping = _run_static_analysis(repo_dir, commit_hash)
+                class_file_mapping = _run_static_analysis(repo_path, commit_hash)
 
                 if len(class_file_mapping) > 0:
                     logger.info("%s: Running TOIF file warnings assimilator" % commit_hash)
                     # Build was successful so we can continue
-                    log = "\n".join((log, run_assimilator(repo_dir)))
+                    log = "\n".join((log, run_assimilator(repo_path)))
 
                     logger.info("%s: Attempting to extract file warnings from assimilator" % commit_hash)
-                    _manage_assimilator_result(repo_dir, commit, service_db, class_file_mapping)
+                    _manage_assimilator_result(repo_id, commit_hash, repo_path, service_db, class_file_mapping)
 
                 else:
                     logger.info("%s: No TOIF file warnings to assimilate" % commit_hash)
@@ -147,7 +153,7 @@ class StaticGuruService:
             if ARTIFACT_ARCHIVER:
                 if ARTIFACT_ARCHIVER_PATH:
                     logger.info("%s: Running archiving on build artifacts as enabled" % commit_hash)
-                    archiving_result = archive(repo_dir, ARTIFACT_ARCHIVER_PATH, repo_id, commit_hash)
+                    archiving_result = archive(repo_path, ARTIFACT_ARCHIVER_PATH, repo_id, commit_hash)
                     if archiving_result:
                         service_db.commit_log_tool(repo_id, commit_hash, 'artifacts_archived', artifact_archiver_version)
                         logger.info("%s: Finished archiving of build artifacts" % commit_hash)
@@ -156,18 +162,17 @@ class StaticGuruService:
 
         # Get the commit parent history
         logger.info("%s: Saving the commit parents" % commit_hash)
-        parent_commit_history = _get_commit_parents(repo_dir, repo_id)
+        parent_commit_history = _get_commit_parents(repo_path, repo_id)
         service_db.add_commit_history_graph(parent_commit_history)
 
         # Getting the file history and adding it to the db
         logger.info("%s: Obtaining file history" % commit_hash)
-        get_commit_file_history(service_db, repo_id, repo_dir, commit_hash)
+        get_commit_file_history(service_db.db, repo_id, repo_path, commit_hash)
 
         service_db.processed_commit(repo_id, commit_hash, commit_result, log=log)
 
-    def checkout_and_build_commit(self, commit, repo_dir):
+    def checkout_and_build_commit(self, commit_hash, repo_dir, author_date):
 
-        commit_hash = commit['commit']
         GIT().checkout(repo_dir, commit_hash)
 
         # Check if it's a maven project
@@ -179,7 +184,6 @@ class StaticGuruService:
             return "MISSING POM", ""
 
         # Determine if we need to override the jdk
-        author_date = commit['author_date'].date()
         jdk_value = self.jdk_override.get_override(commit_hash, author_date)
         mvn_value = self.mvn_override.get_override(commit_hash, author_date)
 
@@ -221,11 +225,9 @@ def _run_static_analysis(repo_dir, commit):
     return run(repo_dir, adaptor_dir_path, commit)
 
 
-def _manage_assimilator_result(repo_dir, commit, service_db, class_file_mapping):
+def _manage_assimilator_result(repo_id, commit_hash, repo_dir, service_db, class_file_mapping):
     kdm_file = _get_kdm_file_output_path(repo_dir)
     zip_kdm_file = kdm_file + ".zip"
-    repo_id = commit['repo']
-    commit_hash = commit['commit']
 
     # Determine if assimilator generated kdm file
     if os.path.isfile(zip_kdm_file):

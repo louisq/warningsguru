@@ -1,7 +1,7 @@
 """
 The MIT License (MIT)
 
-Copyright (c) 2016 Louis-Philippe Querel l_querel@encs.concordia.ca
+Copyright (c) 2016-2017 Louis-Philippe Querel l_querel@encs.concordia.ca
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software
 and associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -68,7 +68,7 @@ class GIT (VCS):
     """
     def get_warning_blames(self, repo_full_path, file_path, lines):
 
-        lines_with_blame = _get_file_blames(repo_full_path, file_path, lines)
+        lines_with_blame = get_file_blames(repo_full_path, file_path, lines)
 
         # todo determine how we would handle the move or copies of lines from one file to another
 
@@ -124,7 +124,7 @@ def _get_graph(hashes):
     return {"commit": hashes_list[0], "parents": None if len(hashes_list) == 0 else hashes_list[1:]}
 
 
-def _get_file_blames(git_root, file_path, lines):
+def get_file_blames(git_root, file_path, lines):
 
     # Sanitize the file path to remove leading slash
     file_path = _file_path_clean_util(file_path)
