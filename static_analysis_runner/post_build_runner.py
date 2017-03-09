@@ -160,8 +160,8 @@ def _run_adaptors_on_files(class_files, repo_path, adaptors, adaptors_save_path)
 def _run_all_adaptors_on_file(class_file, repo_path, adaptors, adaptors_save_path):
 
     for adaptor in adaptors:
-        adaptor_command = [config.TOIF_EXECUTABLE, "--adaptor", adaptor, "--housekeeping",
-                           HOUSE_KEEPING_PATH, "--outputdirectory", adaptors_save_path, "--inputfile", class_file]
+        adaptor_command = [config.TOIF_EXECUTABLE, "--adaptor", adaptor, "--housekeeping", HOUSE_KEEPING_PATH,
+                           "--outputdirectory", adaptors_save_path, "--inputfile", "'%s'" % class_file]
         logger.debug("adaptor command: %s" % adaptor_command)
 
         _wait_for_process_slot()
