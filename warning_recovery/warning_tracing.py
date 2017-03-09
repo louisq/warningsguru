@@ -109,7 +109,7 @@ def commit_warning_recovery(service_db, repo_id, commit_hash, repo_path):
                                  "new_warning": new_warning, "recovered_warning": recovered_warning}
                             )
 
-            logger("%s: Finished warnings recovery on commit. Recovered %s warnings where sg found %s. "
+            logger.info("%s: Finished warnings recovery on commit. Recovered %s warnings where sg found %s. "
                    "%s of these were in recovered" %
                    (commit_hash, len(confirmed_recovered_warnings), identified_warnings_count, double_check_count))
 
