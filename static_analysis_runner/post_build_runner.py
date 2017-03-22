@@ -49,7 +49,7 @@ def run(repo_path, adaptor_save_path, commit):
 
     filtered_modified_files = _filter_files(modified_files, list_of_allowed_extensions)
 
-    compiled_files = _get_all_class_file(repo_path)
+    compiled_files = _get_all_class_file(commit, repo_path)
 
     modified_class_files, class_file_mapping = _identify_modified_class_files(filtered_modified_files, compiled_files, commit)
     logger.info("%s: Modified class files to analyse: %s" % (commit, str(modified_class_files)))
@@ -75,7 +75,7 @@ def _filter_files(files, list_of_extensions):
 FILE_PATTERN = re.compile("([\w\d_-]+)(?:\$[\w\$]*)*\.[\w\d]+")
 
 
-def _get_all_class_file(repo_path):
+def _get_all_class_file(commit, repo_path):
     files_map = {}
 
     for path, directory, files in os.walk(repo_path):
@@ -83,8 +83,12 @@ def _get_all_class_file(repo_path):
         files = fnmatch.filter(files, '*.class')
 
         for class_file in files:
-            # todo handle if the pattern fails
-            name = FILE_PATTERN.match(class_file).groups()[0]
+            match = FILE_PATTERN.match(class_file)
+            if match:
+                name = match.groups()[0]
+            else:
+                logger.error("%s: Unable to extract context from class file %s" % (commit, class_file))
+                continue
 
             if name not in files_map:
                 files_map[name] = {}
