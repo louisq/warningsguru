@@ -34,7 +34,10 @@ def clear_all_repositories(manager_repo_path):
     logger.info("Removing repos from cache")
     repos = filter(lambda folder: os.path.isdir(os.path.join(manager_repo_path, folder)), os.listdir(manager_repo_path))
     for repo in repos:
-        rmtree(os.path.join(manager_repo_path, repo))
+        try:
+            rmtree(os.path.join(manager_repo_path, repo))
+        except Exception as e:
+            logger.error("Error deleting repo %s: %s" % (repo, e.message))
 
 
 def load_repository(repository_id, manager_repo_path, commit):
