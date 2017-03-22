@@ -24,7 +24,7 @@ import time
 
 from db_versioning import flyway_runner
 from kdm_extractor import extract
-from repos.repo_manager import load_repository
+from repos.repo_manager import load_repository, clear_all_repositories
 from repos.git import GIT
 from utility.artifact_archiver import archive, artifact_archiver_version
 from utility.commit import commit_params
@@ -93,6 +93,10 @@ class StaticGuruService:
         service_db = Service_DB(REPROCESS_FAILURES_HOURS)
 
         while True:
+
+            # clear repos
+            clear_all_repositories(REPOSITORY_CACHE_PATH)
+
             service_db.truncate_commit_processing()
             commits = service_db.get_unprocessed_commits()
 

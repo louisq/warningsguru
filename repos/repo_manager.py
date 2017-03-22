@@ -1,7 +1,7 @@
 """
 The MIT License (MIT)
 
-Copyright (c) 2016 Louis-Philippe Querel l_querel@encs.concordia.ca
+Copyright (c) 2016-2017 Louis-Philippe Querel l_querel@encs.concordia.ca
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software
 and associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -26,6 +26,15 @@ from shutil import copytree, rmtree
 # The purpose of this utility is to prevent conflicts between commitguru and staticguru
 import config
 from utility.Logging import logger
+
+
+def clear_all_repositories(manager_repo_path):
+
+    # todo do not delete repos that we will need for the current batch of commits
+    logger.info("Removing repos from cache")
+    repos = filter(lambda folder: os.path.isdir(os.path.join(manager_repo_path, folder)), os.listdir(manager_repo_path))
+    for repo in repos:
+        rmtree(os.path.join(manager_repo_path, repo))
 
 
 def load_repository(repository_id, manager_repo_path, commit):
