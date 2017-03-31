@@ -54,7 +54,7 @@ def load_repository(repository_id, manager_repo_path, commit):
         if os.path.exists(manager_repo_path):
             rmtree(manager_repo_path)
 
-        copytree(commitguru_repo_path, manager_repo_path)
+        copytree(commitguru_repo_path, manager_repo_path, symlinks=True)
 
         commit_in_repo = is_commit_in_repository(manager_repo_path, commit)
 
