@@ -129,6 +129,9 @@ class Service_DB:
             """, (build, log, repo, commit))
         self.db.db.commit()
 
+    def processing_commit_sql_failed(self, repo, commit, error_message):
+        self.processed_commit(repo, commit, "SQL_ERROR", error_message)
+
     def commit_log_tool(self, repo, commit, column, value):
 
         if column not in self.COMMIT_LOG_TOOL_COLUMNS:

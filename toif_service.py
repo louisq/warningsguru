@@ -18,6 +18,8 @@ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FO
 DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
+from psycopg2._psycopg import IntegrityError
+
 from static_analysis_runner.post_build_runner import run
 import subprocess
 import time
@@ -107,7 +109,11 @@ class StaticGuruService:
                     repo_id, commit_hash, repo_path = commit_params(commit)
                     author_date = commit['author_date'].date()
 
-                    self._process_commit(service_db, repo_id, commit_hash, repo_path, author_date)
+                    try:
+                        self._process_commit(service_db, repo_id, commit_hash, repo_path, author_date)
+                    except IntegrityError as error:
+                        logger.error("%s: Database error: %s" % (commit_hash, error.message))
+                        service_db.processing_commit_sql_failed(repo_id, commit_hash, error.message)
 
                 # Once all the commits in the batch have been ran we need to obtain the warnings recovery
                 for commit in commits:
