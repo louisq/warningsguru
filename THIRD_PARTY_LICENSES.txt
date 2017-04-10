@@ -1,4 +1,4 @@
-StaticGuru uses and distributes the following third party tools as part of its repository:
+WarningsGuru uses and distributes the following third party tools as part of its repository:
 
 Flyway
 Folder: db_versioning

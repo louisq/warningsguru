@@ -43,14 +43,14 @@ from warning_recovery.warning_tracing import commit_warning_recovery
 """
 The purpose of this script is to automatically run the TOIF adaptors on each commit that commitguru as analysed.
 """
-PROJECT_NAME = "StaticGuru"
+PROJECT_NAME = "WarningsGuru"
 VERSION = "0.1.2"
 
 BUILD_SUCCESS = "BUILD"
 BUILD_FAILED = "FAILURE"
 
 
-class StaticGuruService:
+class WarningsGuruService:
 
     def __init__(self):
         logger.info("Starting %s - version %s" % (PROJECT_NAME, VERSION))
@@ -333,4 +333,4 @@ def _get_line_blames(repo_dir, warnings):
 
     return warning_lines_blames
 
-StaticGuruService()
+WarningsGuruService()
