@@ -130,6 +130,10 @@ class Service_DB:
         self.db.db.commit()
 
     def processing_commit_sql_failed(self, repo, commit, error_message):
+        # Cancel the current transaction
+        self.db.db.reset()
+
+        # Log the error in the database
         self.processed_commit(repo, commit, "SQL_ERROR", error_message)
 
     def commit_log_tool(self, repo, commit, column, value):
