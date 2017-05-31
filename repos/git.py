@@ -179,7 +179,8 @@ FOLLOW_HISTORY_PATTERN = re.compile(r'(\w+)\n\n(.+)')
 def file_history(git_root, file_path):
     file_path = _file_path_clean_util(file_path)
 
-    git_command = 'git log --format="%H" --name-only --follow "{file}"'.format(file=file_path)
+    # todo file name sanitisation to all calls to the shell
+    git_command = 'git log --format="%H" --name-only --follow "{file}"'.format(file=file_path.replace("$", "/$"))
     process = subprocess.Popen(git_command,
                                shell=True,
                                cwd=os.path.abspath(git_root),
