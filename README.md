@@ -1,5 +1,7 @@
 # WarningsGuru
 
+Tool Demonstration: https://www.youtube.com/watch?v=RVx6l3kvrOM
+
 This utility is used to link together commitguru, git, maven and TOIF in a 
 pipeline that allows commits that have previously been statistically 
 analysed.
@@ -47,6 +49,7 @@ on your system and install the following libraries:
     pip install psycopg2
     pip install gitpython
     pip install lxml
+    pip install subprocess32
 
 ### Others
 
