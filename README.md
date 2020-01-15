@@ -1,6 +1,6 @@
 # WarningsGuru
 
-Tool Demonstration: https://www.youtube.com/watch?v=RVx6l3kvrOM
+<!--- Tool Demonstration: https://www.youtube.com/watch?v=RVx6l3kvrOM --->
 
 This utility is used to link together commitguru, git, maven and TOIF in a 
 pipeline that allows commits that have previously been statistically 
